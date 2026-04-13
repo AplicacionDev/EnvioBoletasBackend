@@ -2,16 +2,18 @@ const fs = require("fs");
 
 /**
  * Caso de uso principal: flujo completo de envío de boletas.
+ * Replica el flujo exacto del Program.cs de C#.
  *
  * Flujo:
  * 1. Obtener empleados con boletas pendientes
- * 2. Por cada empleado, obtener sus boletas pendientes
- * 3. Por cada boleta, obtener datos del empleado
- * 4. Generar HTML con template
- * 5. Convertir HTML a PDF
- * 6. Enviar correo con PDF adjunto
- * 7. Grabar boleta como impresa en BD
- * 8. Eliminar de tabla de pendientes
+ * 2. Por cada empleado, obtener sus boletas pendientes (sp_sel_impresiones_pendientes)
+ * 3. Por cada boleta, ciclo tipoPago (doble si period=13|23)
+ *    a. Obtener datos del empleado (SP_ObtieneDatosEmpleado)
+ *    b. Generar HTML con template
+ *    c. Convertir HTML a PDF
+ *    d. Enviar correo con mensaje de cortesía + PDF adjunto
+ *    e. Grabar boleta como impresa en BD
+ *    f. Eliminar de tabla de pendientes
  */
 class ProcesarBoletasPendientes {
   constructor({ boletaQueryRepository, mailService, templateService, pdfService }) {
@@ -47,60 +49,77 @@ class ProcesarBoletasPendientes {
 
   async #procesarEmpleado(emp, resultados) {
     const { NoEmp, Em_Company, Em_EMail } = emp;
-    console.log(`[ProcesarBoletas] Procesando empleado ${NoEmp} - Email: ${Em_EMail}`);
+    console.log(`[ProcesarBoletas] Procesando empleado ${NoEmp}`);
 
     // 2. Obtener boletas pendientes del empleado
     const boletas = await this.boletaQueryRepository.getBoletasEmpleado(NoEmp, new Date());
 
+    if (boletas.length === 0) return;
+
     for (const boleta of boletas) {
       try {
-        await this.#procesarBoleta(NoEmp, Em_Company, Em_EMail, boleta, resultados);
+        // Campos del SP sp_sel_impresiones_pendientes
+        const period = parseInt(boleta.Period) || 0;
+        const startDate = new Date(boleta["Start Date"]);
+        // C# hace: Convert.ToDateTime(dtRow["End Date"]).ToShortDateString()
+        // En cultura es-GT produce formato "dd/MM/yyyy"
+        const endDateObj = new Date(boleta["End Date"]);
+        const pad2 = (n) => String(n).padStart(2, "0");
+        const endDate = `${pad2(endDateObj.getUTCDate())}/${pad2(endDateObj.getUTCMonth() + 1)}/${endDateObj.getUTCFullYear()}`;
+
+        // Si period=13 o 23 (Aguinaldo/Bono14), tipoPago inicia en 1 (2 iteraciones: 1 y 0)
+        // Si no, tipoPago inicia en 0 (1 iteración)
+        let tipoPago = (period === 13 || period === 23) ? 1 : 0;
+
+        while (tipoPago >= 0) {
+          await this.#procesarBoleta(NoEmp, Em_Company, startDate, endDate, period, tipoPago, resultados);
+          tipoPago--;
+        }
       } catch (error) {
-        const msg = `Error en boleta de ${NoEmp} (periodo ${boleta.Periodo || "?"}): ${error.message}`;
+        const msg = `Error en boleta de ${NoEmp} (periodo ${boleta.Period || "?"}): ${error.message}`;
         console.error(`[ProcesarBoletas] ${msg}`);
         resultados.errores.push(msg);
       }
     }
   }
 
-  async #procesarBoleta(noEmp, empresa, emailEmpleado, boleta, resultados) {
-    const fechaImpresion = boleta.FechaImpresion || new Date();
-    const fecha = boleta.Fecha || boleta.Periodo || new Date();
-    const tipoPago = boleta.TipoPago || boleta.tipoPago || 1;
-    const endDate = boleta.EndDate || boleta.endDate || "";
+  async #procesarBoleta(noEmp, empresa, startDate, endDate, period, tipoPago, resultados) {
+    const ahora = new Date();
 
     // 3. Obtener datos completos del empleado
     const recordsets = await this.boletaQueryRepository.getDatosEmpleado(
       noEmp,
-      fechaImpresion,
-      fecha,
+      ahora,         // fechaImpresion = DateTime.Now
+      startDate,     // fecha = Start Date
       tipoPago,
       endDate
     );
 
-    // El SP devuelve múltiples recordsets:
+    // El SP devuelve 3 recordsets:
     // [0] = empresa info (Empresa, NitEmpresa, Picture)
-    // [1] = datos del empleado (Empleado, Cargo, Departamento, etc.)
-    // [2+] = detalle de la boleta (ingresos/deducciones)
+    // [1] = datos del empleado (Empleado, Cargo, Departamento, RangoPeriodo, etc.)
+    // [2] = detalle HTML generado por el SP (campo DetalleHTML)
     const empresaInfo = recordsets[0]?.[0] || {};
     const datosEmpleado = recordsets[1]?.[0] || {};
-    const detalleRows = recordsets[2] || [];
+    const detalleHtml = recordsets[2]?.[0]?.DetalleHTML || "";
 
-    console.log(`[ProcesarBoletas] Empresa: ${empresaInfo.Empresa}`);
     console.log(`[ProcesarBoletas] Empleado: ${datosEmpleado.Empleado} | Cargo: ${datosEmpleado.Cargo}`);
-    console.log(`[ProcesarBoletas] Detalle: ${detalleRows.length} filas`);
 
-    const detalleHtml = this.#generarDetalleHtml(detalleRows);
-
-    const nombreBoleta = `${noEmp}_${Date.now()}`;
+    // Nombre de boleta: {ddMMyyyyHHmmss}{NoEmp}{yyyyMM}{Period}
+    const pad = (n) => String(n).padStart(2, "0");
+    const nombreBoleta =
+      `${pad(ahora.getDate())}${pad(ahora.getMonth() + 1)}${ahora.getFullYear()}${pad(ahora.getHours())}${pad(ahora.getMinutes())}${pad(ahora.getSeconds())}` +
+      noEmp +
+      `${startDate.getFullYear()}${pad(startDate.getMonth() + 1)}` +
+      period;
 
     // Logo de la empresa
     const logoEmpresa = this.templateService.getLogoEmpresa(empresaInfo.Empresa || empresa);
 
     // Formatear fecha de impresión
-    const fechaImpFmt = this.#formatearFecha(fechaImpresion);
+    const fechaImpFmt = ahora.toLocaleString("es-GT");
 
-    // 4. Generar HTML
+    // 4. Generar HTML (boleta para PDF)
     const html = this.templateService.generarHtml({
       empresa: empresaInfo.Empresa || empresa,
       nitEmpresa: empresaInfo.NitEmpresa || "",
@@ -123,74 +142,45 @@ class ProcesarBoletasPendientes {
     const pdfPath = this.templateService.getTempPdfPath(nombreBoleta);
     await this.pdfService.htmlToPdf(html, pdfPath);
 
-    // 6. Enviar correo
-    const email = emailEmpleado || datosEmpleado.Correo || datosEmpleado.CorreoPersonal || "";
-    console.log(`[ProcesarBoletas] Email para ${noEmp}: "${email}"`);
+    // 6. Enviar correo con mensaje de cortesía (igual que el C#)
+    const email = datosEmpleado.CorreoPersonal || datosEmpleado.Correo || "";
+    const rangoPeriodo = datosEmpleado.RangoPeriodo || "Periodo";
 
     if (email) {
-      const asunto = `Boleta de Pago - ${datosEmpleado.RangoPeriodo || "Periodo"}`;
+      const asunto = `Boleta ${rangoPeriodo}`;
+      const cuerpoCorreo =
+        `Buen día estimado colaborador (a): <br><br>` +
+        `Por este medio se hace entrega de la boleta de pago correspondiente al periodo del ${rangoPeriodo}.<br><br> ` +
+        `Cualquier duda o inquietud favor de comunicarse a la extensión 3450 o en oficina de Compensaciones. <br><br> ` +
+        `Por favor no responder este correo. <br><br> ` +
+        `Saludos Cordiales.`;
+
       console.log(`[ProcesarBoletas] Enviando correo a ${email}...`);
-      await this.mailService.sendMailSmtp(html, asunto, email, pdfPath);
-      console.log(`[ProcesarBoletas] Correo enviado exitosamente a ${email}`);
+      await this.mailService.sendMailSmtp(cuerpoCorreo, asunto, email, pdfPath);
+      console.log(`[ProcesarBoletas] Correo enviado a ${email}`);
     } else {
-      console.warn(`[ProcesarBoletas] ⚠ Empleado ${noEmp} NO tiene email, se omite envío de correo`);
+      console.warn(`[ProcesarBoletas] ⚠ Empleado ${noEmp} NO tiene correo personal, se omite envío`);
     }
 
     // 7. Grabar como impresa
-    console.log(`[ProcesarBoletas] Grabando boleta impresa para ${noEmp}...`);
     const pdfBuffer = this.pdfService.readPdfBuffer(pdfPath);
     await this.boletaQueryRepository.grabaBoletaImpresa(
       noEmp,
-      fechaImpresion,
-      fecha,
+      ahora,
+      startDate,
       pdfBuffer,
       nombreBoleta,
       String(tipoPago)
     );
 
     // 8. Eliminar de pendientes
-    console.log(`[ProcesarBoletas] Eliminando de pendientes ${noEmp}...`);
-    await this.boletaQueryRepository.eliminaDeBTASnoimpresas(noEmp, fecha);
-    console.log(`[ProcesarBoletas] Pendiente eliminado para ${noEmp}`);
+    await this.boletaQueryRepository.eliminaDeBTASnoimpresas(noEmp, startDate);
 
     // Limpiar archivos temporales
     this.#limpiarTemporales(nombreBoleta);
 
     resultados.enviadas++;
     console.log(`[ProcesarBoletas] Boleta enviada: ${noEmp} -> ${email}`);
-  }
-
-  #formatearFecha(fecha) {
-    const d = new Date(fecha);
-    return d.toLocaleDateString("es-GT", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  }
-
-  #generarDetalleHtml(rows) {
-    if (!rows || rows.length === 0) return "";
-
-    const columns = Object.keys(rows[0]);
-    let html = "<table><thead><tr>";
-    for (const col of columns) {
-      html += `<th>${col}</th>`;
-    }
-    html += "</tr></thead><tbody>";
-
-    for (const row of rows) {
-      html += "<tr>";
-      for (const col of columns) {
-        html += `<td>${row[col] ?? ""}</td>`;
-      }
-      html += "</tr>";
-    }
-
-    html += "</tbody></table>";
-    return html;
   }
 
   #limpiarTemporales(nombreBoleta) {

@@ -6,16 +6,26 @@ const LOGOS = {
   ADVERT: "ADVERT_TALENT.png",
   ALIMENTI: "ALIMENTI.png",
   MAQUSA: "MAQUSA_RENT.png",
-  ALTO: "ALTOPLAST.png",
   DISALTO: "DISALTO.png",
+  ALTOPLAST: "ALTOPLAST.png",
   SALINAS: "SALINAS_MINERVA.png",
+};
+
+const TEMPLATES = {
+  PRODUCTOS: "boleta-pralcasa.html",
+  ADVERT: "boleta-advert.html",
+  ALIMENTI: "boleta-alimenti.html",
+  DISALTO: "boleta-disalto.html",
+  ALTOPLAST: "boleta-altoplast.html",
+  MAQUSA: "boleta-maqusa.html",
+  SALINAS: "boleta-salinas.html",
 };
 
 class BoletaTemplateService {
   constructor() {
-    this.templatePath = path.join(process.cwd(), "boleta.html");
+    this.templatesDir = path.join(process.cwd(), "templates");
     this.tempDir = path.join(process.cwd(), "Temp");
-    this.imagesDir = path.join(process.cwd(), "Images");
+    this.imagesDir = path.join(process.cwd(), "public", "images");
     this.#ensureTempDir();
   }
 
@@ -43,6 +53,18 @@ class BoletaTemplateService {
     return "";
   }
 
+  getTemplatePath(nombreEmpresa) {
+    if (nombreEmpresa) {
+      for (const [key, template] of Object.entries(TEMPLATES)) {
+        if (nombreEmpresa.toUpperCase().includes(key)) {
+          const tplPath = path.join(this.templatesDir, template);
+          if (fs.existsSync(tplPath)) return tplPath;
+        }
+      }
+    }
+    return path.join(this.templatesDir, "boleta-pralcasa.html");
+  }
+
   generarHtml({
     empresa,
     nitEmpresa,
@@ -60,7 +82,8 @@ class BoletaTemplateService {
     detalleHtml,
     nombreBoleta,
   }) {
-    let html = fs.readFileSync(this.templatePath, "utf-8");
+    const templatePath = this.getTemplatePath(empresa);
+    let html = fs.readFileSync(templatePath, "utf-8");
 
     const replacements = {
       "{{Empresa}}": empresa || "",
