@@ -1,0 +1,11 @@
+node_modules
+npm-debug.log
+pnpm-debug.log
+Temp
+.env
+.git
+.gitignore
+*.md
+LICENSE
+Images
+EnvioBoletas.postman_collection.json

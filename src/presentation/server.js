@@ -15,9 +15,14 @@ const { ProcesarBoletasPendientes } = require("../application/use-cases/Procesar
 
 // Controller
 const { NominaController } = require("./controllers/NominaController");
+const { SchedulerController } = require("./controllers/SchedulerController");
 
 // Routes
 const { createNominaRoutes } = require("./routes/nominaRoutes");
+const { createSchedulerRoutes } = require("./routes/schedulerRoutes");
+
+// Scheduler
+const { SchedulerService } = require("../infrastructure/services/SchedulerService");
 
 // Middleware
 const { errorHandler } = require("./middlewares/errorHandler");
@@ -54,8 +59,16 @@ function createApp() {
     procesarBoletasPendientes,
   });
 
+  // Scheduler
+  const schedulerService = new SchedulerService(procesarBoletasPendientes);
+  const schedulerController = new SchedulerController(schedulerService);
+
   // Routes
   app.use("/api/nomina", createNominaRoutes(nominaController));
+  app.use("/api/scheduler", createSchedulerRoutes(schedulerController));
+
+  // Iniciar scheduler al crear la app
+  schedulerService.start();
 
   // Health check
   app.get("/api/health", (req, res) => {

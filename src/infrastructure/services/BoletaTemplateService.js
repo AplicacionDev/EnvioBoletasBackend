@@ -31,9 +31,13 @@ class BoletaTemplateService {
 
   #ensureTempDir() {
     if (fs.existsSync(this.tempDir)) {
-      fs.rmSync(this.tempDir, { recursive: true });
+      // Clear contents without removing the directory itself (fails on Docker volume mounts)
+      for (const entry of fs.readdirSync(this.tempDir)) {
+        fs.rmSync(path.join(this.tempDir, entry), { recursive: true, force: true });
+      }
+    } else {
+      fs.mkdirSync(this.tempDir, { recursive: true });
     }
-    fs.mkdirSync(this.tempDir, { recursive: true });
   }
 
   getLogoEmpresa(nombreEmpresa) {

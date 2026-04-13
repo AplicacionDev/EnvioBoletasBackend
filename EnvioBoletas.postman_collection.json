@@ -89,6 +89,124 @@
           }
         }
       ]
+    },
+    {
+      "name": "Scheduler",
+      "description": "Gestión de la agenda programada para el envío automático de boletas",
+      "item": [
+        {
+          "name": "Ver Estado del Scheduler",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/scheduler",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "scheduler"]
+            },
+            "description": "Retorna el estado actual: habilitado/deshabilitado, expresión cron, timezone, si está en ejecución"
+          }
+        },
+        {
+          "name": "Actualizar Configuración",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"enabled\": true,\n  \"cronExpression\": \"0 7 15 * *\",\n  \"description\": \"Ejecutar el 15 de cada mes a las 7:00 AM\",\n  \"timezone\": \"America/Guatemala\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/scheduler",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "scheduler"]
+            },
+            "description": "Actualiza la configuración del scheduler. Campos opcionales: enabled (bool), cronExpression (string cron válido), description (texto libre), timezone (tz válido). Ejemplos de cron:\n- \"0 7 15 * *\" → Día 15 de cada mes a las 7AM\n- \"0 7 1,15 * *\" → Día 1 y 15 de cada mes a las 7AM\n- \"30 6 * * 1,5\" → Lunes y viernes a las 6:30AM\n- \"0 */2 * * *\" → Cada 2 horas\n- \"*/30 * * * *\" → Cada 30 minutos"
+          }
+        },
+        {
+          "name": "Activar Scheduler",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"enabled\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/scheduler",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "scheduler"]
+            },
+            "description": "Activa el scheduler con la configuración cron actual"
+          }
+        },
+        {
+          "name": "Desactivar Scheduler",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"enabled\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/scheduler",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "scheduler"]
+            },
+            "description": "Desactiva el scheduler (detiene el cron)"
+          }
+        },
+        {
+          "name": "Ejecutar a Demanda",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/scheduler/run",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "scheduler", "run"]
+            },
+            "description": "Ejecuta el proceso de envío de boletas inmediatamente sin esperar al cron"
+          }
+        },
+        {
+          "name": "Historial de Ejecuciones",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/scheduler/history?limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "scheduler", "history"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Cantidad máxima de registros a retornar (default: 20, max: 50)"
+                }
+              ]
+            },
+            "description": "Retorna el historial de ejecuciones recientes con trigger, duración, estado y resultado"
+          }
+        }
+      ]
     }
   ]
 }
