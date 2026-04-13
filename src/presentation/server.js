@@ -2,29 +2,22 @@ const express = require("express");
 const cors = require("cors");
 
 // Infrastructure
-const { MssqlBoletaRepository } = require("../infrastructure/repositories/MssqlBoletaRepository");
-const { MssqlEmpleadoRepository } = require("../infrastructure/repositories/MssqlEmpleadoRepository");
+const { MssqlBoletaQueryRepository } = require("../infrastructure/repositories/MssqlBoletaQueryRepository");
+const { SmtpMailService } = require("../infrastructure/services/SmtpMailService");
+const { BoletaTemplateService } = require("../infrastructure/services/BoletaTemplateService");
+const { PdfService } = require("../infrastructure/services/PdfService");
 
-// Use Cases - Boleta
-const { GetAllBoletas } = require("../application/use-cases/boleta/GetAllBoletas");
-const { GetBoletaById } = require("../application/use-cases/boleta/GetBoletaById");
-const { CreateBoleta } = require("../application/use-cases/boleta/CreateBoleta");
-const { UpdateBoleta } = require("../application/use-cases/boleta/UpdateBoleta");
-const { DeleteBoleta } = require("../application/use-cases/boleta/DeleteBoleta");
-const { EnviarBoleta } = require("../application/use-cases/boleta/EnviarBoleta");
+// Use Cases
+const { GetEmpresas } = require("../application/use-cases/GetEmpresas");
+const { GetEmpleadosPendientes } = require("../application/use-cases/GetEmpleadosPendientes");
+const { ValidarPlanilla } = require("../application/use-cases/ValidarPlanilla");
+const { ProcesarBoletasPendientes } = require("../application/use-cases/ProcesarBoletasPendientes");
 
-// Use Cases - Empleado
-const { GetAllEmpleados } = require("../application/use-cases/empleado/GetAllEmpleados");
-const { GetEmpleadoById } = require("../application/use-cases/empleado/GetEmpleadoById");
-const { CreateEmpleado } = require("../application/use-cases/empleado/CreateEmpleado");
-
-// Controllers
-const { BoletaController } = require("./controllers/BoletaController");
-const { EmpleadoController } = require("./controllers/EmpleadoController");
+// Controller
+const { NominaController } = require("./controllers/NominaController");
 
 // Routes
-const { createBoletaRoutes } = require("./routes/boletaRoutes");
-const { createEmpleadoRoutes } = require("./routes/empleadoRoutes");
+const { createNominaRoutes } = require("./routes/nominaRoutes");
 
 // Middleware
 const { errorHandler } = require("./middlewares/errorHandler");
@@ -36,41 +29,33 @@ function createApp() {
   app.use(cors());
   app.use(express.json());
 
-  // Repositories (dependency injection)
-  const boletaRepository = new MssqlBoletaRepository();
-  const empleadoRepository = new MssqlEmpleadoRepository();
+  // Infrastructure (dependency injection)
+  const boletaQueryRepository = new MssqlBoletaQueryRepository();
+  const mailService = new SmtpMailService();
+  const templateService = new BoletaTemplateService();
+  const pdfService = new PdfService();
 
   // Use Cases
-  const getAllBoletas = new GetAllBoletas(boletaRepository);
-  const getBoletaById = new GetBoletaById(boletaRepository);
-  const createBoleta = new CreateBoleta(boletaRepository);
-  const updateBoleta = new UpdateBoleta(boletaRepository);
-  const deleteBoleta = new DeleteBoleta(boletaRepository);
-  const enviarBoleta = new EnviarBoleta(boletaRepository);
-
-  const getAllEmpleados = new GetAllEmpleados(empleadoRepository);
-  const getEmpleadoById = new GetEmpleadoById(empleadoRepository);
-  const createEmpleado = new CreateEmpleado(empleadoRepository);
-
-  // Controllers
-  const boletaController = new BoletaController({
-    getAllBoletas,
-    getBoletaById,
-    createBoleta,
-    updateBoleta,
-    deleteBoleta,
-    enviarBoleta,
+  const getEmpresas = new GetEmpresas(boletaQueryRepository);
+  const getEmpleadosPendientes = new GetEmpleadosPendientes(boletaQueryRepository);
+  const validarPlanilla = new ValidarPlanilla(boletaQueryRepository);
+  const procesarBoletasPendientes = new ProcesarBoletasPendientes({
+    boletaQueryRepository,
+    mailService,
+    templateService,
+    pdfService,
   });
 
-  const empleadoController = new EmpleadoController({
-    getAllEmpleados,
-    getEmpleadoById,
-    createEmpleado,
+  // Controller
+  const nominaController = new NominaController({
+    getEmpresas,
+    getEmpleadosPendientes,
+    validarPlanilla,
+    procesarBoletasPendientes,
   });
 
   // Routes
-  app.use("/api/boletas", createBoletaRoutes(boletaController));
-  app.use("/api/empleados", createEmpleadoRoutes(empleadoController));
+  app.use("/api/nomina", createNominaRoutes(nominaController));
 
   // Health check
   app.get("/api/health", (req, res) => {

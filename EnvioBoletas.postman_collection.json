@@ -1,0 +1,94 @@
+{
+  "info": {
+    "name": "Envío Boletas API",
+    "description": "API REST para envío de boletas de pago de empleados",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3500",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "health"]
+        }
+      }
+    },
+    {
+      "name": "Nomina",
+      "item": [
+        {
+          "name": "Obtener Empresas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/nomina/empresas",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "nomina", "empresas"]
+            }
+          }
+        },
+        {
+          "name": "Empleados con Boletas Pendientes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/nomina/pendientes",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "nomina", "pendientes"]
+            }
+          }
+        },
+        {
+          "name": "Validar Planilla",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/nomina/validar-planilla?fecha=2026-04-01",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "nomina", "validar-planilla"],
+              "query": [
+                {
+                  "key": "fecha",
+                  "value": "2026-04-01",
+                  "description": "Fecha de la planilla a validar (YYYY-MM-DD)"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Procesar Boletas (Flujo Completo)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/nomina/procesar",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "nomina", "procesar"]
+            },
+            "description": "Ejecuta el flujo completo: obtener pendientes → generar HTML → PDF → enviar correo → grabar en BD → eliminar de pendientes"
+          }
+        }
+      ]
+    }
+  ]
+}

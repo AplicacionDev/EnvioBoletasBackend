@@ -1,15 +1,17 @@
-const sql = require("mssql");
-const { envs } = require("../config/envs");
+const sql = require("mssql/msnodesqlv8");
+const { envs } = require("../../config/envs");
 
 const dbConfig = {
   server: envs.DB_SERVER,
   database: envs.DB_DATABASE,
-  user: envs.DB_USER,
-  password: envs.DB_PASSWORD,
+  driver: "msnodesqlv8",
   options: {
+    trustedConnection: false,
     encrypt: false,
     trustServerCertificate: true,
   },
+  user: envs.DB_USER,
+  password: envs.DB_PASSWORD,
 };
 
 let pool = null;
