@@ -46,6 +46,13 @@
     .detalle-section td { padding: 8px 12px; border-bottom: 1px solid #d6d3d1; }
     .detalle-section tr:nth-child(even) { background: #fafaf9; }
     .detalle-section tr:hover { background: #e7e5e4; }
+    .detalle-section th, .detalle-section th * { color: #292524 !important; background: #e7e5e4 !important; }
+    .detalle-section table tr:first-child th,
+    .detalle-section table tr:first-child td,
+    .detalle-section table tr:first-child th *,
+    .detalle-section table tr:first-child td * { background: #e7e5e4 !important; color: #292524 !important; font-weight: 700 !important; }
+    .detalle-section table tr:last-child td,
+    .detalle-section table tr:last-child td * { background: #f5f5f4 !important; color: #292524 !important; font-weight: 700 !important; }
 
     .totals {
       background: linear-gradient(135deg, #292524 0%, #44403c 100%);
@@ -63,6 +70,22 @@
     .footer-badge-icon { width: 12px; height: 12px; background: #78350f; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
     .footer-badge-icon::after { content: ''; width: 4px; height: 6px; border: solid #fff; border-width: 0 1.5px 1.5px 0; transform: rotate(45deg) translateY(-1px); }
     .footer-note { font-size: 8px; color: #a8a29e; margin-top: 8px; }
+
+    /* Pastel theme for full layout */
+    .header { border-bottom-color: #d6d3d1 !important; }
+    .header-title { color: #44403c !important; }
+    .company-section { border-color: #d6d3d1; }
+    .info-card { background: #fdfcfa; border-color: #d6d3d1; }
+    .info-card-header { background: #e7e5e4 !important; color: #44403c !important; }
+    .totals {
+      background: linear-gradient(135deg, #fafaf9 0%, #f5f5f4 100%) !important;
+      color: #44403c !important;
+      border: 1px solid #d6d3d1;
+    }
+    .totals-main { border-bottom-color: #d6d3d1 !important; }
+    .totals-main-label, .totals-label, .totals-value { color: #44403c !important; }
+    .totals-main-value { color: #57534e !important; }
+    .footer-note { color: #78716c; }
   </style>
 </head>
 

@@ -60,12 +60,24 @@ SMTP_USER=correo@dominio.com
 SMTP_PASSWORD=contraseña
 SMTP_FROM=notificaciones@dominio.com
 
+# Proveedor y control de cola (recomendado para alto volumen)
+MAIL_PROVIDER=smtp
+MAIL_THROTTLE_MS=3000
+MAIL_BATCH_SIZE=100
+MAIL_BATCH_PAUSE_MS=120000
+MAIL_MAX_RETRIES=2
+MAIL_RETRY_BASE_MS=2000
+
 # Microsoft Graph (opcional)
 GRAPH_CLIENT_ID=
 GRAPH_CLIENT_SECRET=
 GRAPH_TENANT_ID=
 GRAPH_SEND_AS=
 ```
+
+Notas:
+- `MAIL_PROVIDER` acepta `smtp` o `graph`.
+- Con 1000 correos por corrida, iniciar con `MAIL_THROTTLE_MS=3000` y lotes de 100 reduce picos de salida.
 
 ## Ejecución
 

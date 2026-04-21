@@ -22,6 +22,47 @@ const EMPRESAS = [
   { empresa: "Salinas y Minerva, S.A.",                        nit: "789012-3" },
 ];
 
+const EMPRESA_ALIASES = {
+  "Productos Alimenticios Centroamericanos, S.A.": ["pralcasa", "productos"],
+  "Advert Talent, S.A.": ["advert"],
+  "Alimenti, S.A.": ["alimenti"],
+  "Altoplast, S.A.": ["altoplast"],
+  "Disalto, S.A.": ["disalto"],
+  "Maqusa Rent, S.A.": ["maqusa"],
+  "Salinas y Minerva, S.A.": ["salinas", "minerva"],
+};
+
+function normalizar(texto) {
+  return (texto || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function getEmpresaFiltroArg() {
+  const arg = process.argv.find((a) => a.startsWith("--empresa="));
+  if (!arg) return null;
+  return arg.split("=")[1]?.trim() || null;
+}
+
+function getDelayMsArg() {
+  const arg = process.argv.find((a) => a.startsWith("--delay-ms="));
+  if (!arg) return 3000;
+
+  const value = Number(arg.split("=")[1]);
+  if (!Number.isFinite(value) || value < 0) {
+    throw new Error("--delay-ms debe ser un numero mayor o igual a 0");
+  }
+
+  return Math.floor(value);
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 const DETALLE_HTML = `
 <table>
   <thead>
@@ -43,15 +84,36 @@ async function main() {
   const templateService = new BoletaTemplateService();
   const pdfService = new PdfService();
   const mailService = new SmtpMailService();
+  const enviarReal = process.argv.includes("--enviar");
+  const delayMs = getDelayMsArg();
 
-  console.log(`\n=== Test de envío de boletas – ${EMPRESAS.length} empresas ===\n`);
+  const filtroEmpresa = getEmpresaFiltroArg();
+  const empresasAProcesar = filtroEmpresa
+    ? EMPRESAS.filter(({ empresa }) => {
+        const filtro = normalizar(filtroEmpresa);
+        const nombre = normalizar(empresa);
+        const aliases = (EMPRESA_ALIASES[empresa] || []).map(normalizar);
+        return nombre.includes(filtro) || aliases.some((a) => a.includes(filtro));
+      })
+    : EMPRESAS;
 
-  for (let i = 0; i < EMPRESAS.length; i++) {
-    const { empresa, nit } = EMPRESAS[i];
+  if (filtroEmpresa && empresasAProcesar.length === 0) {
+    throw new Error(`No se encontro empresa para el filtro --empresa=${filtroEmpresa}`);
+  }
+
+  console.log(`\n=== Test de envío de boletas – ${empresasAProcesar.length} empresa(s) ===\n`);
+  console.log(`Modo envio: ${enviarReal ? "REAL" : "SIMULACION"}`);
+  console.log(`Delay entre correos: ${delayMs} ms\n`);
+  if (filtroEmpresa) {
+    console.log(`Filtro aplicado: --empresa=${filtroEmpresa}\n`);
+  }
+
+  for (let i = 0; i < empresasAProcesar.length; i++) {
+    const { empresa, nit } = empresasAProcesar[i];
     const nombreBoleta = `TEST_${Date.now()}_${i}`;
     const logo = templateService.getLogoEmpresa(empresa);
 
-    console.log(`[${i + 1}/${EMPRESAS.length}] ${empresa}`);
+    console.log(`[${i + 1}/${empresasAProcesar.length}] ${empresa}`);
     console.log(`   Plantilla: ${templateService.getTemplatePath(empresa)}`);
 
     // 1. Generar HTML
@@ -78,16 +140,29 @@ async function main() {
     await pdfService.htmlToPdf(html, pdfPath);
     console.log(`   PDF generado: ${pdfPath}`);
 
-    // 3. Enviar correo (deshabilitado para prueba sin envío)
-    // const asunto = `[TEST] Boleta de Pago – ${empresa}`;
-    // const cuerpo = `
-    //   <p>Estimado(a) <b>Jeremy López Tello</b>,</p>
-    //   <p>Adjunto encontrará su boleta de pago correspondiente al periodo <b>01/04/2026 – 15/04/2026</b>.</p>
-    //   <p>Empresa: <b>${empresa}</b></p>
-    //   <p><i>Este es un correo de prueba generado automáticamente.</i></p>
-    // `;
-    // await mailService.sendMailSmtp(cuerpo, asunto, DESTINATARIO, pdfPath);
-    console.log(`   (correo omitido)\n`);
+    // 3. Enviar correo (solo si se pasa --enviar)
+    const asunto = `[TEST] Boleta de Pago – ${empresa}`;
+    const cuerpo = `
+      <p>Estimado(a) <b>Jeremy López Tello</b>,</p>
+      <p>Adjunto encontrará su boleta de pago correspondiente al periodo <b>01/04/2026 – 15/04/2026</b>.</p>
+      <p>Empresa: <b>${empresa}</b></p>
+      <p><i>Este es un correo de prueba generado automáticamente.</i></p>
+    `;
+
+    if (enviarReal) {
+      await mailService.sendMailSmtp(cuerpo, asunto, DESTINATARIO, pdfPath);
+      console.log("   Correo enviado");
+    } else {
+      console.log("   (correo omitido por simulacion, usa --enviar para envio real)");
+    }
+
+    const isLast = i === empresasAProcesar.length - 1;
+    if (!isLast && delayMs > 0) {
+      console.log(`   Esperando ${delayMs} ms antes del siguiente envio...\n`);
+      await sleep(delayMs);
+    } else {
+      console.log("");
+    }
   }
 
   await pdfService.close();

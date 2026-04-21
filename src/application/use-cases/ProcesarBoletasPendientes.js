@@ -1,4 +1,5 @@
 const fs = require("fs");
+const { envs } = require("../../config/envs");
 
 /**
  * Caso de uso principal: flujo completo de envío de boletas.
@@ -21,10 +22,21 @@ class ProcesarBoletasPendientes {
     this.mailService = mailService;
     this.templateService = templateService;
     this.pdfService = pdfService;
+    this.mailConfig = {
+      throttleMs: Math.max(0, envs.MAIL_THROTTLE_MS),
+      batchSize: Math.max(1, envs.MAIL_BATCH_SIZE),
+      batchPauseMs: Math.max(0, envs.MAIL_BATCH_PAUSE_MS),
+      maxRetries: Math.max(0, envs.MAIL_MAX_RETRIES),
+      retryBaseMs: Math.max(250, envs.MAIL_RETRY_BASE_MS),
+      perMinuteLimit: Math.max(0, envs.MAIL_PER_MINUTE_LIMIT),
+    };
+    this._emailsIntentados = 0;
+    this._sentTimestamps = [];
   }
 
   async execute() {
     const resultados = { enviadas: 0, errores: [] };
+    this._emailsIntentados = 0;
 
     // 1. Obtener empleados con boletas pendientes
     const empleados = await this.boletaQueryRepository.getEmpleadosConBoletasPendientes();
@@ -156,7 +168,7 @@ class ProcesarBoletasPendientes {
         `Saludos Cordiales.`;
 
       console.log(`[ProcesarBoletas] Enviando correo a ${email}...`);
-      await this.mailService.sendMailSmtp(cuerpoCorreo, asunto, email, pdfPath);
+      await this.#enviarCorreoConControl(cuerpoCorreo, asunto, email, pdfPath);
       console.log(`[ProcesarBoletas] Correo enviado a ${email}`);
     } else {
       console.warn(`[ProcesarBoletas] ⚠ Empleado ${noEmp} NO tiene correo personal, se omite envío`);
@@ -181,6 +193,101 @@ class ProcesarBoletasPendientes {
 
     resultados.enviadas++;
     console.log(`[ProcesarBoletas] Boleta enviada: ${noEmp} -> ${email}`);
+  }
+
+  async #enviarCorreoConControl(cuerpoCorreo, asunto, email, pdfPath) {
+    let attempt = 0;
+
+    while (attempt <= this.mailConfig.maxRetries) {
+      try {
+        await this.mailService.sendMail(cuerpoCorreo, asunto, email, pdfPath);
+        this._emailsIntentados++;
+        await this.#aplicarPausaDeEnvio();
+        return;
+      } catch (error) {
+        const transient = this.#esErrorTransitorio(error);
+        const canRetry = transient && attempt < this.mailConfig.maxRetries;
+
+        if (!canRetry) {
+          throw error;
+        }
+
+        const waitMs = error.retryAfter
+          ? error.retryAfter * 1000 + 500
+          : this.#calcularBackoffMs(attempt);
+        console.warn(
+          `[ProcesarBoletas] Error transitorio al enviar a ${email}. Reintento ${attempt + 1}/${this.mailConfig.maxRetries} en ${waitMs} ms${error.retryAfter ? " (Retry-After del servidor)" : ""}`
+        );
+        await this.#sleep(waitMs);
+      }
+
+      attempt++;
+    }
+  }
+
+  async #aplicarPausaDeEnvio() {
+    const { throttleMs, batchSize, batchPauseMs, perMinuteLimit } = this.mailConfig;
+    const now = Date.now();
+
+    // --- Límite deslizante por minuto (sliding-window) ---
+    if (perMinuteLimit > 0) {
+      this._sentTimestamps.push(now);
+      this._sentTimestamps = this._sentTimestamps.filter((t) => now - t < 60_000);
+
+      if (this._sentTimestamps.length >= perMinuteLimit) {
+        const waitMs = 60_000 - (now - this._sentTimestamps[0]) + 200;
+        if (waitMs > 0) {
+          console.log(
+            `[ProcesarBoletas] Límite de ${perMinuteLimit} correos/min alcanzado. Esperando ${waitMs} ms`
+          );
+          await this.#sleep(waitMs);
+          this._sentTimestamps = this._sentTimestamps.filter((t) => Date.now() - t < 60_000);
+        }
+      }
+    }
+
+    // --- Pausa de lote ---
+    if (this._emailsIntentados % batchSize === 0 && batchPauseMs > 0) {
+      console.log(`[ProcesarBoletas] Pausa de lote: ${batchPauseMs} ms tras ${this._emailsIntentados} correos`);
+      await this.#sleep(batchPauseMs);
+      return;
+    }
+
+    // --- Throttle por correo ---
+    if (throttleMs > 0) {
+      await this.#sleep(throttleMs);
+    }
+  }
+
+  #esErrorTransitorio(error) {
+    const status = Number(error?.status || error?.response?.statusCode || error?.responseCode || 0);
+    if ([408, 421, 429, 450, 451, 452, 454, 500, 502, 503, 504].includes(status)) {
+      return true;
+    }
+
+    const code = String(error?.code || "").toUpperCase();
+    if (["ETIMEDOUT", "ECONNRESET", "ECONNREFUSED", "EAI_AGAIN", "ESOCKET"].includes(code)) {
+      return true;
+    }
+
+    const msg = String(error?.message || "").toLowerCase();
+    return (
+      msg.includes("throttle") ||
+      msg.includes("too many requests") ||
+      msg.includes("toomanyrequests") ||
+      msg.includes("temporar") ||
+      msg.includes("timeout")
+    );
+  }
+
+  #calcularBackoffMs(attempt) {
+    const expo = this.mailConfig.retryBaseMs * 2 ** attempt;
+    const jitter = Math.floor(Math.random() * 500);
+    return expo + jitter;
+  }
+
+  #sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   #limpiarTemporales(nombreBoleta) {

@@ -1,26 +1,23 @@
+const sql = require("mssql/msnodesqlv8");
 const { envs } = require("../../config/envs");
 
-// msnodesqlv8 is Windows-only; fall back to tedious (default mssql driver) on Linux/Docker
-let sql;
-let useNativeDriver = false;
-try {
-  sql = require("mssql/msnodesqlv8");
-  useNativeDriver = true;
-} catch {
-  sql = require("mssql");
-}
+const odbcDriver = envs.DB_ODBC_DRIVER || "ODBC Driver 18 for SQL Server";
 
 const dbConfig = {
-  server: envs.DB_SERVER,
-  database: envs.DB_DATABASE,
-  ...(useNativeDriver ? { driver: "msnodesqlv8" } : {}),
+  driver: "msnodesqlv8",
+  connectionString:
+    `Driver={${odbcDriver}};` +
+    `Server=${envs.DB_SERVER};` +
+    `Database=${envs.DB_DATABASE};` +
+    `Uid=${envs.DB_USER};` +
+    `Pwd=${envs.DB_PASSWORD};` +
+    "Encrypt=no;" +
+    "TrustServerCertificate=yes;",
   options: {
     trustedConnection: false,
     encrypt: false,
     trustServerCertificate: true,
   },
-  user: envs.DB_USER,
-  password: envs.DB_PASSWORD,
 };
 
 let pool = null;

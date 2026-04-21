@@ -45,6 +45,13 @@
     .detalle-section td { padding: 8px 12px; border-bottom: 1px solid #e5e5e5; }
     .detalle-section tr:nth-child(even) { background: #fef2f2; }
     .detalle-section tr:hover { background: #fecaca; }
+    .detalle-section th, .detalle-section th * { color: #7f1d1d !important; background: #fee2e2 !important; }
+    .detalle-section table tr:first-child th,
+    .detalle-section table tr:first-child td,
+    .detalle-section table tr:first-child th *,
+    .detalle-section table tr:first-child td * { background: #fee2e2 !important; color: #7f1d1d !important; font-weight: 700 !important; }
+    .detalle-section table tr:last-child td,
+    .detalle-section table tr:last-child td * { background: #fecaca !important; color: #7f1d1d !important; font-weight: 700 !important; }
 
     .totals {
       background: linear-gradient(135deg, #991b1b 0%, #b91c1c 100%);
@@ -62,6 +69,36 @@
     .footer-badge-icon { width: 12px; height: 12px; background: #dc2626; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
     .footer-badge-icon::after { content: ''; width: 4px; height: 6px; border: solid #fff; border-width: 0 1.5px 1.5px 0; transform: rotate(45deg) translateY(-1px); }
     .footer-note { font-size: 8px; color: #9ca3af; margin-top: 8px; }
+
+    /* Pastel theme for full layout */
+    .header { border-bottom-color: #fbcfe8 !important; }
+    .header-title { color: #881337 !important; }
+    .company-section {
+      background: #ffffff;
+      border: 1px solid #fbcfe8;
+    }
+    .info-card { background: #ffffff; border-color: #fbcfe8; }
+    .info-card-header { background: #fff1f2 !important; color: #881337 !important; }
+    .info-table tr:nth-child(even) { background: #fff7f8 !important; }
+    .detalle-section tr:nth-child(even) { background: #fff7f8 !important; }
+    .detalle-section tr:hover { background: #ffe4e6 !important; }
+    .detalle-section th, .detalle-section th * { color: #881337 !important; background: #fff1f2 !important; }
+    .detalle-section table tr:first-child th,
+    .detalle-section table tr:first-child td,
+    .detalle-section table tr:first-child th *,
+    .detalle-section table tr:first-child td * { background: #fff1f2 !important; color: #881337 !important; }
+    .detalle-section table tr:last-child td,
+    .detalle-section table tr:last-child td * { background: #ffe4e6 !important; color: #881337 !important; }
+    .totals {
+      background: linear-gradient(135deg, #ffffff 0%, #fff1f2 100%) !important;
+      color: #881337 !important;
+      border: 1px solid #fbcfe8;
+    }
+    .totals-main { border-bottom-color: #f9a8d4 !important; }
+    .totals-main-label, .totals-label, .totals-value { color: #881337 !important; }
+    .totals-main-value { color: #9f1239 !important; }
+    .footer-note { color: #6b7280; }
+
   </style>
 </head>
 

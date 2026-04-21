@@ -105,7 +105,7 @@
     }
 
     .info-table tr:nth-child(even) {
-      background: #fef9c3;
+      background: #ecfdf5;
     }
 
     .info-table th {
@@ -149,9 +149,15 @@
       letter-spacing: 0.5px;
     }
 
+    .detalle-section th,
+    .detalle-section th * {
+      color: #14532d !important;
+      background: #e8f5e9 !important;
+    }
+
     .detalle-section td {
       padding: 8px 12px;
-      border-bottom: 1px solid #e5e5e5;
+      border-bottom: 1px solid #e5e5e500;
     }
 
     .detalle-section tr:nth-child(even) {
@@ -160,6 +166,23 @@
 
     .detalle-section tr:hover {
       background: #fef08a;
+    }
+
+    /* Overrides for legacy inline styles coming from SP DetalleHTML */
+    .detalle-section table tr:first-child th,
+    .detalle-section table tr:first-child td,
+    .detalle-section table tr:first-child th *,
+    .detalle-section table tr:first-child td * {
+      background: #e8f5e9 !important;
+      color: #14532d !important;
+      font-weight: 700 !important;
+    }
+
+    .detalle-section table tr:last-child td,
+    .detalle-section table tr:last-child td * {
+      background: #dcfce7 !important;
+      color: #14532d !important;
+      font-weight: 700 !important;
     }
 
     .totals {
@@ -201,7 +224,7 @@
     }
 
     .totals-label {
-      color: rgba(255,255,255,0.8);
+      color: rgb(0, 0, 0);
     }
 
     .totals-value {
@@ -250,6 +273,53 @@
       font-size: 8px;
       color: #9ca3af;
       margin-top: 8px;
+    }
+
+    /* Pastel theme for full layout */
+    .header {
+      border-bottom-color: #86efac !important;
+    }
+
+    .header-title {
+      color: #166534 !important;
+    }
+
+    .company-section {
+      border: 1px solid #bbf7d0;
+    }
+
+    .info-card {
+      background: #f7fff8;
+      border-color: #bbf7d0;
+    }
+
+    .info-card-header {
+      background: #dcfce7 !important;
+      color: #166534 !important;
+    }
+
+    .totals {
+      background: linear-gradient(135deg, #ecfdf5 0%, #dcfce7 100%) !important;
+      color: #14532d !important;
+      border: 1px solid #bbf7d0;
+    }
+
+    .totals-main {
+      border-bottom-color: #86efac !important;
+    }
+
+    .totals-main-label,
+    .totals-label,
+    .totals-value {
+      color: #14532d !important;
+    }
+
+    .totals-main-value {
+      color: #15803d !important;
+    }
+
+    .footer-note {
+      color: #4b5563;
     }
   </style>
 </head>

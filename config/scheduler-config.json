@@ -1,6 +1,6 @@
 {
   "enabled": true,
-  "cronExpression": "0 7 15 * *",
-  "description": "Ejecutar el 15 de cada mes a las 7:00 AM",
+  "cronExpression": "48 8 * * 1,2,3,4,5,6,0",
+  "description": "Ejecutar todos los días a las 08:48",
   "timezone": "America/Guatemala"
 }

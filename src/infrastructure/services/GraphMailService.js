@@ -10,6 +10,10 @@ class GraphMailService extends MailService {
     this._tokenExpiresAt = 0;
   }
 
+  async sendMail(htmlBody, asunto, destinatario, filePath) {
+    return this.sendMailGraph(htmlBody, asunto, destinatario, filePath);
+  }
+
   async sendMailGraph(htmlBody, asunto, destinatario, filePath) {
     if (!destinatario) return;
 
@@ -60,7 +64,11 @@ class GraphMailService extends MailService {
     if (!response.ok) {
       const errorBody = await response.text();
       console.error(`[GraphMail] Error ${response.status}: ${errorBody}`);
-      throw new Error(`Graph API error: ${response.status} - ${errorBody}`);
+      const err = new Error(`Graph API error: ${response.status} - ${errorBody}`);
+      err.status = response.status;
+      const retryAfterHeader = response.headers.get("Retry-After");
+      if (retryAfterHeader) err.retryAfter = Number(retryAfterHeader);
+      throw err;
     }
 
     console.log(`[GraphMail] Correo enviado exitosamente a ${destinatario} (status: ${response.status})`);

@@ -45,6 +45,13 @@
     .detalle-section td { padding: 8px 12px; border-bottom: 1px solid #e2e8f0; }
     .detalle-section tr:nth-child(even) { background: #f0f9ff; }
     .detalle-section tr:hover { background: #bae6fd; }
+    .detalle-section th, .detalle-section th * { color: #334155 !important; background: #e0f2fe !important; }
+    .detalle-section table tr:first-child th,
+    .detalle-section table tr:first-child td,
+    .detalle-section table tr:first-child th *,
+    .detalle-section table tr:first-child td * { background: #e0f2fe !important; color: #334155 !important; font-weight: 700 !important; }
+    .detalle-section table tr:last-child td,
+    .detalle-section table tr:last-child td * { background: #dbeafe !important; color: #334155 !important; font-weight: 700 !important; }
 
     .totals {
       background: linear-gradient(135deg, #475569 0%, #64748b 100%);
@@ -62,6 +69,22 @@
     .footer-badge-icon { width: 12px; height: 12px; background: #0ea5e9; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
     .footer-badge-icon::after { content: ''; width: 4px; height: 6px; border: solid #fff; border-width: 0 1.5px 1.5px 0; transform: rotate(45deg) translateY(-1px); }
     .footer-note { font-size: 8px; color: #9ca3af; margin-top: 8px; }
+
+    /* Pastel theme for full layout */
+    .header { border-bottom-color: #7dd3fc !important; }
+    .header-title { color: #334155 !important; }
+    .company-section { border: 1px solid #bae6fd; }
+    .info-card { background: #f8fcff; border-color: #bae6fd; }
+    .info-card-header { background: #e0f2fe !important; color: #334155 !important; }
+    .totals {
+      background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%) !important;
+      color: #334155 !important;
+      border: 1px solid #bae6fd;
+    }
+    .totals-main { border-bottom-color: #7dd3fc !important; }
+    .totals-main-label, .totals-label, .totals-value { color: #334155 !important; }
+    .totals-main-value { color: #0ea5e9 !important; }
+    .footer-note { color: #64748b; }
   </style>
 </head>
 

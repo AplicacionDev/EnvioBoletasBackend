@@ -5,6 +5,17 @@
  */
 class MailService {
   /**
+   * Envía correo usando la implementación concreta configurada.
+   * @param {string} htmlBody - Contenido HTML del correo
+   * @param {string} asunto - Asunto del correo
+   * @param {string} destinatario - Email del destinatario
+   * @param {string} filePath - Ruta del archivo adjunto (PDF)
+   */
+  async sendMail(htmlBody, asunto, destinatario, filePath) {
+    throw new Error("Method not implemented");
+  }
+
+  /**
    * Envía correo vía SMTP con archivo adjunto.
    * @param {string} htmlBody - Contenido HTML del correo
    * @param {string} asunto - Asunto del correo

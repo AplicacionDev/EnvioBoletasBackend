@@ -4,8 +4,10 @@ const cors = require("cors");
 // Infrastructure
 const { MssqlBoletaQueryRepository } = require("../infrastructure/repositories/MssqlBoletaQueryRepository");
 const { SmtpMailService } = require("../infrastructure/services/SmtpMailService");
+const { GraphMailService } = require("../infrastructure/services/GraphMailService");
 const { BoletaTemplateService } = require("../infrastructure/services/BoletaTemplateService");
 const { PdfService } = require("../infrastructure/services/PdfService");
+const { envs } = require("../config/envs");
 
 // Use Cases
 const { GetEmpresas } = require("../application/use-cases/GetEmpresas");
@@ -26,19 +28,23 @@ const { SchedulerService } = require("../infrastructure/services/SchedulerServic
 
 // Middleware
 const { errorHandler } = require("./middlewares/errorHandler");
+const { requestLogger } = require("./middlewares/requestLogger");
 
 function createApp() {
   const app = express();
 
   // Middlewares globales
   app.use(cors());
+  app.use(requestLogger);
   app.use(express.json());
 
   // Infrastructure (dependency injection)
   const boletaQueryRepository = new MssqlBoletaQueryRepository();
-  const mailService = new SmtpMailService();
+  const mailService = envs.MAIL_PROVIDER === "graph" ? new GraphMailService() : new SmtpMailService();
   const templateService = new BoletaTemplateService();
   const pdfService = new PdfService();
+
+  console.log(`[Mail] Proveedor configurado: ${envs.MAIL_PROVIDER}`);
 
   // Use Cases
   const getEmpresas = new GetEmpresas(boletaQueryRepository);

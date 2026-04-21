@@ -4,30 +4,18 @@ services:
     container_name: envio-boletas-api
     restart: unless-stopped
     ports:
-      - "${PORT:-3500}:3000"
+      - "${PORT:-3500}:3500"
+    dns:
+      - 172.16.100.155
+    extra_hosts:
+      - "SRVBDP006:172.16.100.36"
+      - "srvbdp006:172.16.100.36"
+      - "SRVBDP006.byb.gt:172.16.100.36"
+      - "srvbdp006.byb.gt:172.16.100.36"
+    env_file: .env
     environment:
       NODE_ENV: production
-      PORT: 3000
-
-      # SQL Server
-      DB_SERVER: ${DB_SERVER}
-      DB_DATABASE: ${DB_DATABASE}
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_APP_NAME: ${DB_APP_NAME:-EnvioBoletas}
-
-      # SMTP
-      SMTP_HOST: ${SMTP_HOST}
-      SMTP_PORT: ${SMTP_PORT:-587}
-      SMTP_USER: ${SMTP_USER}
-      SMTP_PASSWORD: ${SMTP_PASSWORD}
-      SMTP_FROM: ${SMTP_FROM}
-
-      # Microsoft Graph
-      GRAPH_CLIENT_ID: ${GRAPH_CLIENT_ID}
-      GRAPH_CLIENT_SECRET: ${GRAPH_CLIENT_SECRET}
-      GRAPH_TENANT_ID: ${GRAPH_TENANT_ID}
-      GRAPH_SEND_AS: ${GRAPH_SEND_AS}
+      PORT: 3500
     volumes:
       - ./config:/app/config
       - boleta-temp:/app/Temp

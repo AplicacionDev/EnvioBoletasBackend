@@ -9,6 +9,7 @@ const envs = {
   DB_DATABASE: process.env.DB_DATABASE,
   DB_USER: process.env.DB_USER,
   DB_PASSWORD: process.env.DB_PASSWORD,
+  DB_ODBC_DRIVER: process.env.DB_ODBC_DRIVER || "ODBC Driver 18 for SQL Server",
   DB_APP_NAME: process.env.DB_APP_NAME || "EnvioBoletas",
 
   // SMTP
@@ -17,6 +18,15 @@ const envs = {
   SMTP_USER: process.env.SMTP_USER,
   SMTP_PASSWORD: process.env.SMTP_PASSWORD,
   SMTP_FROM: process.env.SMTP_FROM,
+
+  // Mail provider
+  MAIL_PROVIDER: (process.env.MAIL_PROVIDER || "smtp").toLowerCase(),
+  MAIL_THROTTLE_MS: Number(process.env.MAIL_THROTTLE_MS) || 3000,
+  MAIL_BATCH_SIZE: Number(process.env.MAIL_BATCH_SIZE) || 100,
+  MAIL_BATCH_PAUSE_MS: Number(process.env.MAIL_BATCH_PAUSE_MS) || 120000,
+  MAIL_MAX_RETRIES: Number(process.env.MAIL_MAX_RETRIES) || 2,
+  MAIL_RETRY_BASE_MS: Number(process.env.MAIL_RETRY_BASE_MS) || 2000,
+  MAIL_PER_MINUTE_LIMIT: Number(process.env.MAIL_PER_MINUTE_LIMIT) || 20,
 
   // Microsoft Graph
   GRAPH_CLIENT_ID: process.env.GRAPH_CLIENT_ID,

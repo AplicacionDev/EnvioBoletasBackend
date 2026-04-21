@@ -1,5 +1,4 @@
 const nodemailer = require("nodemailer");
-const fs = require("fs");
 const path = require("path");
 const { MailService } = require("../../domain/services/MailService");
 const { envs } = require("../../config/envs");
@@ -19,6 +18,10 @@ class SmtpMailService extends MailService {
         minVersion: "TLSv1.2",
       },
     });
+  }
+
+  async sendMail(htmlBody, asunto, destinatario, filePath) {
+    return this.sendMailSmtp(htmlBody, asunto, destinatario, filePath);
   }
 
   async sendMailSmtp(htmlBody, asunto, destinatario, filePath) {
