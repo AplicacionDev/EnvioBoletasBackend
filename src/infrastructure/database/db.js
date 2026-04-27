@@ -1,54 +1,31 @@
+const sql = require("mssql/msnodesqlv8");
 const net = require("net");
 const os = require("os");
 const fs = require("fs");
 const { envs } = require("../../config/envs");
 
-const isWindows = process.platform === "win32";
-const dbClient = envs.DB_CLIENT || (isWindows ? "msnodesqlv8" : "mssql");
-const sql = dbClient === "msnodesqlv8" ? require("mssql/msnodesqlv8") : require("mssql");
-
 const odbcDriver = envs.DB_ODBC_DRIVER || "ODBC Driver 18 for SQL Server";
 const dbAppName = envs.DB_APP_NAME || "EnvioBoletas";
 
-const dbConfig = dbClient === "msnodesqlv8"
-  ? {
-      driver: "msnodesqlv8",
-      connectionString:
-        `Driver={${odbcDriver}};` +
-        `Server=${envs.DB_SERVER}${envs.DB_PORT ? `,${envs.DB_PORT}` : ""};` +
-        `Database=${envs.DB_DATABASE};` +
-        `Uid=${envs.DB_USER};` +
-        `Pwd=${envs.DB_PASSWORD};` +
-        `APP=${dbAppName};` +
-        "Encrypt=no;" +
-        "TrustServerCertificate=yes;",
-      options: {
-        trustedConnection: false,
-        encrypt: false,
-        trustServerCertificate: true,
-      },
-      connectionTimeout: 5000,
-      requestTimeout: 5000,
-    }
-  : {
-      server: envs.DB_SERVER,
-      port: Number(envs.DB_PORT) || 1433,
-      database: envs.DB_DATABASE,
-      user: envs.DB_USER,
-      password: envs.DB_PASSWORD,
-      options: {
-        appName: dbAppName,
-        encrypt: false,
-        trustServerCertificate: true,
-      },
-      pool: {
-        max: 10,
-        min: 0,
-        idleTimeoutMillis: 30000,
-      },
-      connectionTimeout: 5000,
-      requestTimeout: 5000,
-    };
+const dbConfig = {
+  driver: "msnodesqlv8",
+  connectionString:
+    `Driver={${odbcDriver}};` +
+    `Server=${envs.DB_SERVER};` +
+    `Database=${envs.DB_DATABASE};` +
+    `Uid=${envs.DB_USER};` +
+    `Pwd=${envs.DB_PASSWORD};` +
+    `APP=${dbAppName};` +
+    "Encrypt=no;" +
+    "TrustServerCertificate=yes;",
+  options: {
+    trustedConnection: false,
+    encrypt: false,
+    trustServerCertificate: true,
+  },
+  connectionTimeout: 5000,
+  requestTimeout: 5000,
+};
 
 let pool = null;
 
@@ -57,7 +34,7 @@ async function getConnection() {
 
   try {
     pool = await sql.connect(dbConfig);
-    console.log(`Conexión a SQL Server establecida usando ${dbClient} (${envs.DB_SERVER}:${envs.DB_PORT || 1433})`);
+    console.log("Conexión a SQL Server establecida usando msnodesqlv8");
     return pool;
   } catch (error) {
     console.error("Error al conectar a SQL Server:", error.message);
@@ -131,10 +108,9 @@ async function getDatabaseDiagnostics() {
     },
     target: {
       server: envs.DB_SERVER,
-      port: envs.DB_PORT || 1433,
       database: envs.DB_DATABASE,
       user: envs.DB_USER,
-      driver: dbClient,
+      driver: "msnodesqlv8",
       appName: envs.DB_APP_NAME || null,
     },
     network: {

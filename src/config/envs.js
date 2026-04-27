@@ -6,8 +6,6 @@ const envs = {
 
   // SQL Server
   DB_SERVER: process.env.DB_SERVER,
-  DB_PORT: Number(process.env.DB_PORT) || 1433,
-  DB_CLIENT: (process.env.DB_CLIENT || "").toLowerCase(),
   DB_DATABASE: process.env.DB_DATABASE,
   DB_USER: process.env.DB_USER,
   DB_PASSWORD: process.env.DB_PASSWORD,
