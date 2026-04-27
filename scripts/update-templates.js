@@ -1,4 +1,13 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+/**
+ * Actualiza los 7 templates de boleta con el diseño mejorado.
+ * Ejecutar: node scripts/update-templates.js
+ */
+const fs = require("fs");
+const path = require("path");
+
+const templatesDir = path.join(__dirname, "..", "templates");
+
+const TEMPLATE = `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
@@ -169,9 +178,25 @@
     <!-- Pie -->
     <div class="footer">
         <div><strong>LIQUIDO A RECIBIR:</strong> {{LiquidoARecibir}}</div>
-        <div><strong>Recibí conforme la cantidad de:</strong> **{{CantidadLetras}}**</div>
+        <div><strong>Recib\u00ed conforme la cantidad de:</strong> **{{CantidadLetras}}**</div>
         <div><strong>Nit Empleado:</strong> {{NitEmpleado}}</div>
     </div>
 
 </body>
-</html>
+</html>`;
+
+const files = [
+  "boleta-pralcasa.html",
+  "boleta-advert.html",
+  "boleta-alimenti.html",
+  "boleta-altoplast.html",
+  "boleta-disalto.html",
+  "boleta-maqusa.html",
+  "boleta-salinas.html",
+];
+
+for (const file of files) {
+  fs.writeFileSync(path.join(templatesDir, file), TEMPLATE, "utf-8");
+  console.log(`Actualizado: ${file}`);
+}
+console.log("Listo.");

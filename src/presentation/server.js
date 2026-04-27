@@ -7,6 +7,8 @@ const { SmtpMailService } = require("../infrastructure/services/SmtpMailService"
 const { GraphMailService } = require("../infrastructure/services/GraphMailService");
 const { BoletaTemplateService } = require("../infrastructure/services/BoletaTemplateService");
 const { PdfService } = require("../infrastructure/services/PdfService");
+const { checkDatabaseConnection } = require("../infrastructure/database/db");
+const { getDatabaseDiagnostics } = require("../infrastructure/database/db");
 const { envs } = require("../config/envs");
 
 // Use Cases
@@ -77,8 +79,23 @@ function createApp() {
   schedulerService.start();
 
   // Health check
-  app.get("/api/health", (req, res) => {
-    res.json({ ok: true, message: "API Envío de Boletas funcionando" });
+  app.get("/api/health", async (req, res) => {
+    const db = await checkDatabaseConnection();
+    const ok = db.ok;
+
+    res.status(ok ? 200 : 503).json({
+      ok,
+      message: ok
+        ? "API Envío de Boletas funcionando"
+        : "API funcionando, pero la base de datos no está disponible",
+      database: db,
+    });
+  });
+
+  // Health detallado para diagnóstico con DBA (sin exponer contraseña)
+  app.get("/api/health/db-diagnostics", async (req, res) => {
+    const diagnostics = await getDatabaseDiagnostics();
+    res.status(diagnostics.database.ok ? 200 : 503).json(diagnostics);
   });
 
   // Error handler

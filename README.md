@@ -52,6 +52,7 @@ DB_DATABASE=nombre_base_datos
 DB_USER=usuario
 DB_PASSWORD=contraseña
 DB_APP_NAME=.Net SqlClient Data Provider
+PRE_ENVIO_SP=APLICACIONES.dbo.sp_mover_boletas_pendientes
 
 # SMTP (Office 365)
 SMTP_HOST=smtp.office365.com
@@ -77,6 +78,8 @@ GRAPH_SEND_AS=
 
 Notas:
 - `MAIL_PROVIDER` acepta `smtp` o `graph`.
+- `DB_APP_NAME` define el Application Name reportado a SQL Server (útil para pruebas con triggers de login).
+- `PRE_ENVIO_SP` es opcional; si se define, la API ejecuta ese procedimiento almacenado antes de consultar boletas pendientes.
 - Con 1000 correos por corrida, iniciar con `MAIL_THROTTLE_MS=3000` y lotes de 100 reduce picos de salida.
 
 ## Ejecución
@@ -114,6 +117,7 @@ pnpm start
 | Método | Ruta | Descripción |
 |--------|------|-------------|
 | `GET` | `/api/health` | Estado del servicio |
+| `GET` | `/api/health/db-diagnostics` | Diagnóstico detallado de conectividad a SQL Server |
 
 ## Scheduler
 

@@ -38,6 +38,9 @@ class ProcesarBoletasPendientes {
     const resultados = { enviadas: 0, errores: [] };
     this._emailsIntentados = 0;
 
+    // Ejecuta el SP que prepara/mueve boletas pendientes antes de iniciar el envío.
+    await this.boletaQueryRepository.ejecutarPreparacionPendientes();
+
     // 1. Obtener empleados con boletas pendientes
     const empleados = await this.boletaQueryRepository.getEmpleadosConBoletasPendientes();
     console.log(`[ProcesarBoletas] ${empleados.length} empleados con boletas pendientes`);

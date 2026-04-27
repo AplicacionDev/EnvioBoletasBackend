@@ -6,11 +6,14 @@ const envs = {
 
   // SQL Server
   DB_SERVER: process.env.DB_SERVER,
+  DB_PORT: Number(process.env.DB_PORT) || 1433,
+  DB_CLIENT: (process.env.DB_CLIENT || "").toLowerCase(),
   DB_DATABASE: process.env.DB_DATABASE,
   DB_USER: process.env.DB_USER,
   DB_PASSWORD: process.env.DB_PASSWORD,
   DB_ODBC_DRIVER: process.env.DB_ODBC_DRIVER || "ODBC Driver 18 for SQL Server",
   DB_APP_NAME: process.env.DB_APP_NAME || "EnvioBoletas",
+  PRE_ENVIO_SP: process.env.PRE_ENVIO_SP || "",
 
   // SMTP
   SMTP_HOST: process.env.SMTP_HOST,

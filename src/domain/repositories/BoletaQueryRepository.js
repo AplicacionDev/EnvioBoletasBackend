@@ -9,6 +9,11 @@ class BoletaQueryRepository {
     throw new Error("Method not implemented");
   }
 
+  /** Ejecuta proceso previo para poblar boletas pendientes */
+  async ejecutarPreparacionPendientes() {
+    throw new Error("Method not implemented");
+  }
+
   /** Obtiene empleados con boletas pendientes de envío */
   async getEmpleadosConBoletasPendientes() {
     throw new Error("Method not implemented");

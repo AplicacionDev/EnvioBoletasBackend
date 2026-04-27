@@ -1,5 +1,6 @@
 const { BoletaQueryRepository } = require("../../domain/repositories/BoletaQueryRepository");
 const { getConnection, sql } = require("../database/db");
+const { envs } = require("../../config/envs");
 
 class MssqlBoletaQueryRepository extends BoletaQueryRepository {
   async getEmpresas() {
@@ -9,6 +10,14 @@ class MssqlBoletaQueryRepository extends BoletaQueryRepository {
        FROM PRODUCCION.PRALCASA.dbo.Company`
     );
     return result.recordset;
+  }
+
+  async ejecutarPreparacionPendientes() {
+    if (!envs.PRE_ENVIO_SP) return;
+
+    const pool = await getConnection();
+    console.log(`[SQL] Ejecutando SP previo al envío: ${envs.PRE_ENVIO_SP}`);
+    await pool.request().execute(envs.PRE_ENVIO_SP);
   }
 
   async getEmpleadosConBoletasPendientes() {

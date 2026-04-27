@@ -8,9 +8,11 @@ require("dotenv").config();
 
 const { BoletaTemplateService } = require("../src/infrastructure/services/BoletaTemplateService");
 const { PdfService } = require("../src/infrastructure/services/PdfService");
+const { GraphMailService } = require("../src/infrastructure/services/GraphMailService");
 const { SmtpMailService } = require("../src/infrastructure/services/SmtpMailService");
+const { envs } = require("../src/config/envs");
 
-const DESTINATARIO = "jeremytello27@gmail.com";
+const DESTINATARIO = "jlopez@productosbyb.com";
 
 const EMPRESAS = [
   { empresa: "Productos Alimenticios Centroamericanos, S.A.",  nit: "123456-7" },
@@ -67,23 +69,34 @@ const DETALLE_HTML = `
 <table>
   <thead>
     <tr>
-      <th>Concepto</th>
-      <th>Ingresos</th>
-      <th>Descuentos</th>
+      <th colspan="3">Detalle de pago</th>
+    </tr>
+    <tr>
+      <th>Tipo Movimiento</th>
+      <th>Ingresos (+)</th>
+      <th>Deducciones (-)</th>
     </tr>
   </thead>
   <tbody>
-    <tr><td>Salario Base</td><td>Q 1,000.00</td><td></td></tr>
-    <tr><td>Bonificación Incentivo</td><td>Q 250.00</td><td></td></tr>
-    <tr><td>IGSS</td><td></td><td>Q 48.30</td></tr>
-    <tr><td><strong>TOTALES</strong></td><td><strong>Q 1,250.00</strong></td><td><strong>Q 48.30</strong></td></tr>
+    <tr><td>Salario Ordinario</td><td>7,625.00</td><td></td></tr>
+    <tr><td>Bonificación Incentivo</td><td>125.00</td><td></td></tr>
+    <tr><td>IGSS Retención Empleado</td><td></td><td>-368.29</td></tr>
+    <tr><td>ISR</td><td></td><td>-129.09</td></tr>
+    <tr><td>Descuento Calzado Industrial</td><td></td><td>-72.00</td></tr>
+    <tr><td>Préstamo Personal</td><td></td><td>-500.00</td></tr>
+    <tr><td>Seguro de Vida</td><td></td><td>-45.00</td></tr>
+    <tr><td>Descuento Comedor</td><td></td><td>-150.00</td></tr>
+    <tr><td>Cuota Sindical</td><td></td><td>-25.00</td></tr>
+    <tr><td>Anticipo de Salario</td><td></td><td>-200.00</td></tr>
+    <tr><td>TOTALES</td><td>7,750.00</td><td>-1,489.38</td></tr>
   </tbody>
 </table>`;
 
 async function main() {
   const templateService = new BoletaTemplateService();
   const pdfService = new PdfService();
-  const mailService = new SmtpMailService();
+  const mailService = envs.MAIL_PROVIDER === "graph" ? new GraphMailService() : new SmtpMailService();
+  console.log(`[Test] Proveedor: ${envs.MAIL_PROVIDER}`);
   const enviarReal = process.argv.includes("--enviar");
   const delayMs = getDelayMsArg();
 
@@ -150,7 +163,7 @@ async function main() {
     `;
 
     if (enviarReal) {
-      await mailService.sendMailSmtp(cuerpo, asunto, DESTINATARIO, pdfPath);
+      await mailService.sendMail(cuerpo, asunto, DESTINATARIO, pdfPath);
       console.log("   Correo enviado");
     } else {
       console.log("   (correo omitido por simulacion, usa --enviar para envio real)");
