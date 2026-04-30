@@ -1,27 +1,26 @@
-const sql = require("mssql/msnodesqlv8");
+const sql = require("mssql");
 const net = require("net");
 const os = require("os");
 const fs = require("fs");
 const { envs } = require("../../config/envs");
 
-const odbcDriver = envs.DB_ODBC_DRIVER || "ODBC Driver 18 for SQL Server";
 const dbAppName = envs.DB_APP_NAME || "EnvioBoletas";
 
 const dbConfig = {
-  driver: "msnodesqlv8",
-  connectionString:
-    `Driver={${odbcDriver}};` +
-    `Server=${envs.DB_SERVER};` +
-    `Database=${envs.DB_DATABASE};` +
-    `Uid=${envs.DB_USER};` +
-    `Pwd=${envs.DB_PASSWORD};` +
-    `APP=${dbAppName};` +
-    "Encrypt=no;" +
-    "TrustServerCertificate=yes;",
+  server: envs.DB_SERVER,
+  database: envs.DB_DATABASE,
+  user: envs.DB_USER,
+  password: envs.DB_PASSWORD,
+  port: envs.DB_PORT,
+  pool: {
+    max: 10,
+    min: 0,
+    idleTimeoutMillis: 30000,
+  },
   options: {
-    trustedConnection: false,
-    encrypt: false,
-    trustServerCertificate: true,
+    encrypt: envs.DB_ENCRYPT,
+    trustServerCertificate: envs.DB_TRUST_SERVER_CERTIFICATE,
+    appName: dbAppName,
   },
   connectionTimeout: 5000,
   requestTimeout: 5000,
@@ -34,7 +33,7 @@ async function getConnection() {
 
   try {
     pool = await sql.connect(dbConfig);
-    console.log("Conexión a SQL Server establecida usando msnodesqlv8");
+    console.log("Conexion a SQL Server establecida usando mssql (tedious)");
     return pool;
   } catch (error) {
     console.error("Error al conectar a SQL Server:", error.message);
@@ -110,7 +109,7 @@ async function getDatabaseDiagnostics() {
       server: envs.DB_SERVER,
       database: envs.DB_DATABASE,
       user: envs.DB_USER,
-      driver: "msnodesqlv8",
+      driver: "tedious (mssql)",
       appName: envs.DB_APP_NAME || null,
     },
     network: {

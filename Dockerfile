@@ -1,21 +1,6 @@
 # ── Build stage ──
 FROM node:22-slim AS build
 
-# Install build tools for native modules (msnodesqlv8)
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    g++ \
-    make \
-    python3 \
-    unixodbc-dev \
-    curl \
-    gnupg2 \
-    ca-certificates \
-  && curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /usr/share/keyrings/microsoft-prod.gpg \
-  && echo "deb [signed-by=/usr/share/keyrings/microsoft-prod.gpg] https://packages.microsoft.com/debian/12/prod bookworm main" > /etc/apt/sources.list.d/mssql-release.list \
-  && apt-get update \
-  && ACCEPT_EULA=Y apt-get install -y --no-install-recommends msodbcsql18 \
-  && rm -rf /var/lib/apt/lists/*
-
 # Install pnpm
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
@@ -26,7 +11,7 @@ WORKDIR /app
 # Copy dependency manifests first (better layer caching)
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
-# Install production dependencies (with native builds for msnodesqlv8)
+# Install production dependencies
 RUN pnpm install --prod --frozen-lockfile
 
 # Manually trigger puppeteer install (downloads Chromium)
@@ -35,17 +20,9 @@ RUN npx puppeteer browsers install chrome
 # ── Production stage ──
 FROM node:22-slim
 
-# Install ca-certificates first, then Microsoft ODBC Driver + Puppeteer/Chromium deps
+# Install runtime libs required by Chromium/Puppeteer
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
-    curl \
-    gnupg2 \
-  && curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /usr/share/keyrings/microsoft-prod.gpg \
-  && echo "deb [signed-by=/usr/share/keyrings/microsoft-prod.gpg] https://packages.microsoft.com/debian/12/prod bookworm main" > /etc/apt/sources.list.d/mssql-release.list \
-  && apt-get update \
-  && ACCEPT_EULA=Y apt-get install -y --no-install-recommends \
-    msodbcsql18 \
-    unixodbc \
     fonts-liberation \
     libasound2 \
     libatk-bridge2.0-0 \

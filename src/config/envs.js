@@ -1,5 +1,10 @@
 require("dotenv").config();
 
+function toBool(value, fallback) {
+  if (value === undefined) return fallback;
+  return String(value).toLowerCase() === "true";
+}
+
 const envs = {
   PORT: process.env.PORT || 3000,
   NODE_ENV: process.env.NODE_ENV || "development",
@@ -9,7 +14,9 @@ const envs = {
   DB_DATABASE: process.env.DB_DATABASE,
   DB_USER: process.env.DB_USER,
   DB_PASSWORD: process.env.DB_PASSWORD,
-  DB_ODBC_DRIVER: process.env.DB_ODBC_DRIVER || "ODBC Driver 18 for SQL Server",
+  DB_PORT: Number(process.env.DB_PORT) || 1433,
+  DB_ENCRYPT: toBool(process.env.DB_ENCRYPT, false),
+  DB_TRUST_SERVER_CERTIFICATE: toBool(process.env.DB_TRUST_SERVER_CERTIFICATE, true),
   DB_APP_NAME: process.env.DB_APP_NAME || "EnvioBoletas",
   PRE_ENVIO_SP: process.env.PRE_ENVIO_SP || "",
 

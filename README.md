@@ -5,7 +5,7 @@ API REST para el envío automatizado de boletas de pago de empleados. Genera PDF
 ## Tecnologías
 
 - **Node.js** + **Express 5**
-- **SQL Server** (mssql + msnodesqlv8 ODBC nativo)
+- **SQL Server** (mssql + tedious, compatible con Linux)
 - **Puppeteer** — Generación de PDF desde HTML
 - **Nodemailer** — Envío de correo vía SMTP (Office 365)
 - **node-cron** — Ejecución programada
@@ -48,10 +48,13 @@ NODE_ENV=development
 
 # SQL Server
 DB_SERVER=nombre_servidor
+DB_PORT=1433
 DB_DATABASE=nombre_base_datos
 DB_USER=usuario
 DB_PASSWORD=contraseña
-DB_APP_NAME=.Net SqlClient Data Provider
+DB_ENCRYPT=false
+DB_TRUST_SERVER_CERTIFICATE=true
+DB_APP_NAME=EnvioBoletas
 PRE_ENVIO_SP=APLICACIONES.dbo.sp_mover_boletas_pendientes
 
 # SMTP (Office 365)
