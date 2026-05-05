@@ -117,8 +117,14 @@ class ProcesarBoletasPendientes {
       try {
         // Campos del SP sp_sel_impresiones_pendientes
         const period = parseInt(boleta.Period) || 0;
-        const startDate = toSafeDate(boleta["Start Date"]);
-        const endDateObj = toSafeDate(boleta["End Date"]);
+
+        // Log diagnóstico: muestra los campos y valores reales del SP
+        const rawStart = boleta["Start Date"] ?? boleta["start date"] ?? boleta["StartDate"] ?? boleta["startDate"];
+        const rawEnd   = boleta["End Date"]   ?? boleta["end date"]   ?? boleta["EndDate"]   ?? boleta["endDate"];
+        console.log(`[ProcesarBoletas] Boleta raw NoEmp=${NoEmp} period=${period} StartDate="${rawStart}" (${typeof rawStart}) EndDate="${rawEnd}" (${typeof rawEnd})`);
+
+        const startDate = toSafeDate(rawStart);
+        const endDateObj = toSafeDate(rawEnd);
 
         if (!startDate || !endDateObj) {
           const msg = `Fechas inválidas en boleta de ${NoEmp} (periodo ${boleta.Period || "?"}): Start="${boleta["Start Date"]}" End="${boleta["End Date"]}"`;
@@ -152,13 +158,19 @@ class ProcesarBoletasPendientes {
     const ahora = new Date();
 
     // 3. Obtener datos completos del empleado
-    const recordsets = await this.boletaQueryRepository.getDatosEmpleado(
-      noEmp,
-      ahora,         // fechaImpresion = DateTime.Now
-      startDate,     // fecha = Start Date
-      tipoPago,
-      endDate
-    );
+    console.log(`[SQL] getDatosEmpleado noEmp=${noEmp} fechaImpresion=${ahora.toISOString()} fecha=${startDate.toISOString()} tipoPago=${tipoPago} endDate="${endDate}"`);
+    let recordsets;
+    try {
+      recordsets = await this.boletaQueryRepository.getDatosEmpleado(
+        noEmp,
+        ahora,
+        startDate,
+        tipoPago,
+        endDate
+      );
+    } catch (err) {
+      throw new Error(`getDatosEmpleado falló: ${err.message}`);
+    }
 
     // El SP devuelve 3 recordsets:
     // [0] = empresa info (Empresa, NitEmpresa, Picture)
@@ -229,17 +241,27 @@ class ProcesarBoletasPendientes {
 
     // 7. Grabar como impresa
     const pdfBuffer = this.pdfService.readPdfBuffer(pdfPath);
-    await this.boletaQueryRepository.grabaBoletaImpresa(
-      noEmp,
-      ahora,
-      startDate,
-      pdfBuffer,
-      nombreBoleta,
-      String(tipoPago)
-    );
+    console.log(`[SQL] grabaBoletaImpresa noEmp=${noEmp} fechaImpresion=${ahora.toISOString()} periodo=${startDate.toISOString()}`);
+    try {
+      await this.boletaQueryRepository.grabaBoletaImpresa(
+        noEmp,
+        ahora,
+        startDate,
+        pdfBuffer,
+        nombreBoleta,
+        String(tipoPago)
+      );
+    } catch (err) {
+      throw new Error(`grabaBoletaImpresa falló: ${err.message}`);
+    }
 
     // 8. Eliminar de pendientes
-    await this.boletaQueryRepository.eliminaDeBTASnoimpresas(noEmp, startDate);
+    console.log(`[SQL] eliminaDeBTASnoimpresas noEmp=${noEmp} periodo=${startDate.toISOString()}`);
+    try {
+      await this.boletaQueryRepository.eliminaDeBTASnoimpresas(noEmp, startDate);
+    } catch (err) {
+      throw new Error(`eliminaDeBTASnoimpresas falló: ${err.message}`);
+    }
 
     // Limpiar archivos temporales
     this.#limpiarTemporales(nombreBoleta);

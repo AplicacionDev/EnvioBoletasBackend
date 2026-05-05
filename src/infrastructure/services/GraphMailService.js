@@ -80,7 +80,6 @@ class GraphMailService extends MailService {
     }
 
     const url = `https://login.microsoftonline.com/${envs.GRAPH_TENANT_ID}/oauth2/v2.0/token`;
-
     const params = new URLSearchParams({
       client_id: envs.GRAPH_CLIENT_ID,
       scope: "https://graph.microsoft.com/.default",
@@ -88,23 +87,43 @@ class GraphMailService extends MailService {
       grant_type: "client_credentials",
     });
 
-    const response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: params.toString(),
-    });
+    const MAX_INTENTOS = 3;
+    const BASE_DELAY_MS = 1500;
 
-    if (!response.ok) {
+    for (let intento = 1; intento <= MAX_INTENTOS; intento++) {
+      // Limpiar caché antes de cada intento para no devolver token inválido
+      this._token = null;
+      this._tokenExpiresAt = 0;
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: params.toString(),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        this._token = data.access_token;
+        // Refresca 5 minutos antes de que expire
+        this._tokenExpiresAt = Date.now() + (data.expires_in - 300) * 1000;
+        return this._token;
+      }
+
       const errorBody = await response.text();
-      throw new Error(`Token error: ${response.status} - ${errorBody}`);
+
+      // Error 4xx que no sea 401 ni 429 → no reintentar
+      if (response.status >= 400 && response.status < 500 && response.status !== 429 && response.status !== 401) {
+        throw new Error(`Token error: ${response.status} - ${errorBody}`);
+      }
+
+      if (intento < MAX_INTENTOS) {
+        const delay = BASE_DELAY_MS * Math.pow(2, intento - 1);
+        console.warn(`[GraphMail] Token intento ${intento}/${MAX_INTENTOS} falló (${response.status}), reintentando en ${delay}ms...`);
+        await new Promise((r) => setTimeout(r, delay));
+      } else {
+        throw new Error(`Token error tras ${MAX_INTENTOS} intentos: ${response.status} - ${errorBody}`);
+      }
     }
-
-    const data = await response.json();
-    this._token = data.access_token;
-    // Refresca 5 minutos antes de que expire
-    this._tokenExpiresAt = Date.now() + (data.expires_in - 300) * 1000;
-
-    return this._token;
   }
 }
 

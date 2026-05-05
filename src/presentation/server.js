@@ -33,6 +33,33 @@ const { SchedulerService } = require("../infrastructure/services/SchedulerServic
 const { errorHandler } = require("./middlewares/errorHandler");
 const { requestLogger } = require("./middlewares/requestLogger");
 
+function createMailService() {
+  const smtpMailService = new SmtpMailService();
+
+  if (envs.MAIL_PROVIDER !== "graph") {
+    return smtpMailService;
+  }
+
+  const graphMailService = new GraphMailService();
+
+  if (!envs.MAIL_GRAPH_FALLBACK_TO_SMTP) {
+    return graphMailService;
+  }
+
+  return {
+    async sendMail(htmlBody, asunto, destinatario, filePath) {
+      try {
+        await graphMailService.sendMail(htmlBody, asunto, destinatario, filePath);
+      } catch (error) {
+        console.warn(
+          `[Mail] Graph falló (${error.message}). Fallback a SMTP para ${destinatario}...`
+        );
+        await smtpMailService.sendMail(htmlBody, asunto, destinatario, filePath);
+      }
+    },
+  };
+}
+
 function createApp() {
   const app = express();
 
@@ -43,7 +70,7 @@ function createApp() {
 
   // Infrastructure (dependency injection)
   const boletaQueryRepository = new MssqlBoletaQueryRepository();
-  const mailService = envs.MAIL_PROVIDER === "graph" ? new GraphMailService() : new SmtpMailService();
+  const mailService = createMailService();
   const templateService = new BoletaTemplateService();
   const pdfService = new PdfService();
 

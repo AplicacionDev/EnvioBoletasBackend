@@ -43,6 +43,7 @@ const envs = {
   MAIL_MAX_RETRIES: Number(process.env.MAIL_MAX_RETRIES) || 2,
   MAIL_RETRY_BASE_MS: Number(process.env.MAIL_RETRY_BASE_MS) || 2000,
   MAIL_PER_MINUTE_LIMIT: Number(process.env.MAIL_PER_MINUTE_LIMIT) || 20,
+  MAIL_GRAPH_FALLBACK_TO_SMTP: toBool(process.env.MAIL_GRAPH_FALLBACK_TO_SMTP, true),
 
   // Microsoft Graph
   GRAPH_CLIENT_ID: process.env.GRAPH_CLIENT_ID,
