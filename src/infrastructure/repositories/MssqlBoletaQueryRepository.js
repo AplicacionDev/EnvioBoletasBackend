@@ -55,7 +55,15 @@ class MssqlBoletaQueryRepository extends BoletaQueryRepository {
       .input("i_fecha", sql.DateTime, fecha)
       .input("i_tipo_pago", sql.Int, tipoPago)
       .input("i_EndDate", sql.VarChar, endDate)
-      .execute("APLICACIONES.dbo.SP_ObtieneDatosEmpleado");
+      .query(
+        `SET DATEFORMAT dmy;
+         EXEC APLICACIONES.dbo.SP_ObtieneDatosEmpleado
+           @i_NumeroEmpleado = @i_NumeroEmpleado,
+           @i_fechaImpresion = @i_fechaImpresion,
+           @i_fecha = @i_fecha,
+           @i_tipo_pago = @i_tipo_pago,
+           @i_EndDate = @i_EndDate`
+      );
 
     return result.recordsets;
   }

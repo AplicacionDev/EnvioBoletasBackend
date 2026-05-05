@@ -39,7 +39,11 @@ class NominaController {
   /** POST /api/nomina/procesar — Ejecuta el flujo completo */
   procesar = async (req, res, next) => {
     try {
-      const resultado = await this.procesarBoletasPendientes.execute();
+      const maxBoletasRaw = req.body?.maxBoletas;
+      const maxBoletas = Number(maxBoletasRaw);
+      const resultado = await this.procesarBoletasPendientes.execute({
+        maxBoletas: Number.isFinite(maxBoletas) && maxBoletas > 0 ? Math.floor(maxBoletas) : undefined,
+      });
       res.json({
         ok: true,
         message: "Proceso de envío de boletas finalizado",

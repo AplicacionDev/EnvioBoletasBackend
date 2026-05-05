@@ -1,4 +1,5 @@
 const fs = require("fs");
+const os = require("os");
 const path = require("path");
 
 const LOGOS = {
@@ -24,19 +25,36 @@ const TEMPLATES = {
 class BoletaTemplateService {
   constructor() {
     this.templatesDir = path.join(process.cwd(), "templates");
-    this.tempDir = path.join(process.cwd(), "Temp");
     this.imagesDir = path.join(process.cwd(), "public", "images");
-    this.#ensureTempDir();
+    this.tempDir = this.#resolveWritableTempDir();
+    this.#clearTempDir();
   }
 
-  #ensureTempDir() {
+  #resolveWritableTempDir() {
+    const candidates = [
+      path.join(process.cwd(), "Temp"),
+      path.join(os.tmpdir(), "envio-boletas-temp"),
+    ];
+
+    for (const dir of candidates) {
+      try {
+        fs.mkdirSync(dir, { recursive: true });
+        fs.accessSync(dir, fs.constants.W_OK);
+        return dir;
+      } catch (error) {
+        console.warn(`[Template] Temp no escribible en ${dir}: ${error.message}`);
+      }
+    }
+
+    throw new Error("No se encontró un directorio temporal con permisos de escritura");
+  }
+
+  #clearTempDir() {
     if (fs.existsSync(this.tempDir)) {
       // Clear contents without removing the directory itself (fails on Docker volume mounts)
       for (const entry of fs.readdirSync(this.tempDir)) {
         fs.rmSync(path.join(this.tempDir, entry), { recursive: true, force: true });
       }
-    } else {
-      fs.mkdirSync(this.tempDir, { recursive: true });
     }
   }
 

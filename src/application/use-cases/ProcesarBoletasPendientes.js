@@ -59,8 +59,17 @@ class ProcesarBoletasPendientes {
     this._sentTimestamps = [];
   }
 
-  async execute() {
-    const resultados = { enviadas: 0, errores: [] };
+  async execute(options = {}) {
+    const maxBoletas = Number.isFinite(Number(options.maxBoletas)) && Number(options.maxBoletas) > 0
+      ? Math.floor(Number(options.maxBoletas))
+      : Infinity;
+
+    const resultados = {
+      enviadas: 0,
+      procesadas: 0,
+      errores: [],
+      maxBoletas: Number.isFinite(maxBoletas) ? maxBoletas : null,
+    };
     this._emailsIntentados = 0;
 
     // Verificar si ya hay boletas pendientes en la tabla antes de ejecutar el SP.
@@ -88,8 +97,13 @@ class ProcesarBoletasPendientes {
     ];
 
     for (const emp of empleadosOrdenados) {
+      if (resultados.procesadas >= maxBoletas) {
+        console.log(`[ProcesarBoletas] Límite de ${maxBoletas} boletas alcanzado (procesadas). Se detiene el proceso.`);
+        break;
+      }
+
       try {
-        await this.#procesarEmpleado(emp, resultados);
+        await this.#procesarEmpleado(emp, resultados, maxBoletas);
       } catch (error) {
         const msg = `Error procesando empleado ${emp.NoEmp}: ${error.message}`;
         console.error(`[ProcesarBoletas] ${msg}`);
@@ -100,11 +114,13 @@ class ProcesarBoletasPendientes {
     // Cerrar browser de puppeteer al terminar el lote
     await this.pdfService.close();
 
-    console.log(`[ProcesarBoletas] Finalizado: ${resultados.enviadas} enviadas, ${resultados.errores.length} errores`);
+    console.log(
+      `[ProcesarBoletas] Finalizado: ${resultados.enviadas} enviadas, ${resultados.procesadas} procesadas, ${resultados.errores.length} errores`
+    );
     return resultados;
   }
 
-  async #procesarEmpleado(emp, resultados) {
+  async #procesarEmpleado(emp, resultados, maxBoletas) {
     const { NoEmp, Em_Company, Em_EMail } = emp;
     console.log(`[ProcesarBoletas] Procesando empleado ${NoEmp}`);
 
@@ -114,6 +130,10 @@ class ProcesarBoletasPendientes {
     if (boletas.length === 0) return;
 
     for (const boleta of boletas) {
+      if (resultados.procesadas >= maxBoletas) {
+        break;
+      }
+
       try {
         // Campos del SP sp_sel_impresiones_pendientes
         const period = parseInt(boleta.Period) || 0;
@@ -133,15 +153,21 @@ class ProcesarBoletasPendientes {
           continue;
         }
 
-        // Enviar i_EndDate en formato ISO evita ambigüedades regionales al convertir varchar->datetime en SQL Server.
+        // El SP en SQL espera i_EndDate como varchar en formato dd/MM/yyyy (style 103).
+        // Con driver tedious en Docker, usar este formato evita conversiones ambiguas.
         const pad2 = (n) => String(n).padStart(2, "0");
-        const endDate = `${endDateObj.getUTCFullYear()}-${pad2(endDateObj.getUTCMonth() + 1)}-${pad2(endDateObj.getUTCDate())}`;
+        const endDate = `${pad2(endDateObj.getUTCDate())}/${pad2(endDateObj.getUTCMonth() + 1)}/${endDateObj.getUTCFullYear()}`;
 
         // Si period=13 o 23 (Aguinaldo/Bono14), tipoPago inicia en 1 (2 iteraciones: 1 y 0)
         // Si no, tipoPago inicia en 0 (1 iteración)
         let tipoPago = (period === 13 || period === 23) ? 1 : 0;
 
         while (tipoPago >= 0) {
+          if (resultados.procesadas >= maxBoletas) {
+            break;
+          }
+
+          resultados.procesadas++;
           await this.#procesarBoleta(NoEmp, Em_Company, startDate, endDate, period, tipoPago, resultados);
           tipoPago--;
         }
