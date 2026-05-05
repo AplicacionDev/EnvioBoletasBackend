@@ -24,6 +24,7 @@ const { SchedulerController } = require("./controllers/SchedulerController");
 // Routes
 const { createNominaRoutes } = require("./routes/nominaRoutes");
 const { createSchedulerRoutes } = require("./routes/schedulerRoutes");
+const { createAuthRoutes } = require("./routes/authRoutes");
 
 // Scheduler
 const { SchedulerService } = require("../infrastructure/services/SchedulerService");
@@ -72,6 +73,7 @@ function createApp() {
   const schedulerController = new SchedulerController(schedulerService);
 
   // Routes
+  app.use("/api/auth", createAuthRoutes());
   app.use("/api/nomina", createNominaRoutes(nominaController));
   app.use("/api/scheduler", createSchedulerRoutes(schedulerController));
 

@@ -49,6 +49,11 @@ const envs = {
   GRAPH_CLIENT_SECRET: process.env.GRAPH_CLIENT_SECRET,
   GRAPH_TENANT_ID: process.env.GRAPH_TENANT_ID,
   GRAPH_SEND_AS: process.env.GRAPH_SEND_AS,
+
+  // Microsoft Entra ID (SSO / Autenticación de usuarios)
+  ENTRA_CLIENT_ID: process.env.ENTRA_CLIENT_ID,
+  ENTRA_TENANT_ID: process.env.ENTRA_TENANT_ID,
+  ENTRA_AUDIENCE: process.env.ENTRA_AUDIENCE || (process.env.ENTRA_CLIENT_ID ? `api://${process.env.ENTRA_CLIENT_ID}` : undefined),
 };
 
 module.exports = { envs };
