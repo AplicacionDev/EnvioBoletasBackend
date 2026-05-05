@@ -2,6 +2,31 @@ const fs = require("fs");
 const { envs } = require("../../config/envs");
 
 /**
+ * Convierte cualquier valor de fecha (Date, ISO string, "dd/MM/yyyy") a un Date válido.
+ * Devuelve null si el valor es nulo/undefined o no puede interpretarse.
+ */
+function toSafeDate(value) {
+  if (!value) return null;
+  if (value instanceof Date) return isNaN(value.getTime()) ? null : value;
+
+  const str = String(value).trim();
+
+  // Intentar parseo estándar (ISO 8601, etc.)
+  const direct = new Date(str);
+  if (!isNaN(direct.getTime())) return direct;
+
+  // Formato dd/MM/yyyy o dd/MM/yyyy HH:mm:ss (cultura es-GT)
+  const match = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?: (\d{2}):(\d{2}):(\d{2}))?/);
+  if (match) {
+    const [, d, m, y, hh = "0", mm = "0", ss = "0"] = match;
+    const candidate = new Date(Date.UTC(+y, +m - 1, +d, +hh, +mm, +ss));
+    if (!isNaN(candidate.getTime())) return candidate;
+  }
+
+  return null;
+}
+
+/**
  * Caso de uso principal: flujo completo de envío de boletas.
  * Replica el flujo exacto del Program.cs de C#.
  *
@@ -55,7 +80,14 @@ class ProcesarBoletasPendientes {
     const empleados = await this.boletaQueryRepository.getEmpleadosConBoletasPendientes();
     console.log(`[ProcesarBoletas] ${empleados.length} empleados con boletas pendientes`);
 
-    for (const emp of empleados) {
+    // Priorizar empleado 004373: va primero, el resto mantiene su orden original
+    const PRIORIDAD_NOEMP = "004373";
+    const empleadosOrdenados = [
+      ...empleados.filter(e => e.NoEmp === PRIORIDAD_NOEMP),
+      ...empleados.filter(e => e.NoEmp !== PRIORIDAD_NOEMP),
+    ];
+
+    for (const emp of empleadosOrdenados) {
       try {
         await this.#procesarEmpleado(emp, resultados);
       } catch (error) {
@@ -85,10 +117,18 @@ class ProcesarBoletasPendientes {
       try {
         // Campos del SP sp_sel_impresiones_pendientes
         const period = parseInt(boleta.Period) || 0;
-        const startDate = new Date(boleta["Start Date"]);
+        const startDate = toSafeDate(boleta["Start Date"]);
+        const endDateObj = toSafeDate(boleta["End Date"]);
+
+        if (!startDate || !endDateObj) {
+          const msg = `Fechas inválidas en boleta de ${NoEmp} (periodo ${boleta.Period || "?"}): Start="${boleta["Start Date"]}" End="${boleta["End Date"]}"`;
+          console.error(`[ProcesarBoletas] ${msg}`);
+          resultados.errores.push(msg);
+          continue;
+        }
+
         // C# hace: Convert.ToDateTime(dtRow["End Date"]).ToShortDateString()
         // En cultura es-GT produce formato "dd/MM/yyyy"
-        const endDateObj = new Date(boleta["End Date"]);
         const pad2 = (n) => String(n).padStart(2, "0");
         const endDate = `${pad2(endDateObj.getUTCDate())}/${pad2(endDateObj.getUTCMonth() + 1)}/${endDateObj.getUTCFullYear()}`;
 
