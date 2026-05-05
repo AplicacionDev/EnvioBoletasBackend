@@ -38,8 +38,18 @@ class ProcesarBoletasPendientes {
     const resultados = { enviadas: 0, errores: [] };
     this._emailsIntentados = 0;
 
-    // Ejecuta el SP que prepara/mueve boletas pendientes antes de iniciar el envío.
-    await this.boletaQueryRepository.ejecutarPreparacionPendientes();
+    // Verificar si ya hay boletas pendientes en la tabla antes de ejecutar el SP.
+    // Si la tabla está vacía → correr SP para llenarla.
+    // Si ya tiene registros → saltarse el SP y enviar directamente.
+    const totalPendientes = await this.boletaQueryRepository.contarBoletasPendientes();
+    console.log(`[ProcesarBoletas] Boletas pendientes en tabla: ${totalPendientes}`);
+
+    if (totalPendientes === 0) {
+      console.log(`[ProcesarBoletas] Tabla vacía → ejecutando SP de preparación...`);
+      await this.boletaQueryRepository.ejecutarPreparacionPendientes();
+    } else {
+      console.log(`[ProcesarBoletas] Tabla con registros → omitiendo SP, procediendo a enviar.`);
+    }
 
     // 1. Obtener empleados con boletas pendientes
     const empleados = await this.boletaQueryRepository.getEmpleadosConBoletasPendientes();

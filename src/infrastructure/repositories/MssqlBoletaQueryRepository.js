@@ -89,6 +89,14 @@ class MssqlBoletaQueryRepository extends BoletaQueryRepository {
       );
   }
 
+  async contarBoletasPendientes() {
+    const pool = await getConnection();
+    const result = await pool.request().query(
+      `SELECT COUNT(*) AS total FROM PRODUCCION.[BYB_DB].dbo.[BTASnoimpresas]`
+    );
+    return result.recordset[0].total;
+  }
+
   async validaPlanilla(fecha) {
     const pool = await getConnection();
     const result = await pool
