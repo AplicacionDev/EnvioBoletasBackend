@@ -133,10 +133,9 @@ class ProcesarBoletasPendientes {
           continue;
         }
 
-        // C# hace: Convert.ToDateTime(dtRow["End Date"]).ToShortDateString()
-        // En cultura es-GT produce formato "dd/MM/yyyy"
+        // Enviar i_EndDate en formato ISO evita ambigüedades regionales al convertir varchar->datetime en SQL Server.
         const pad2 = (n) => String(n).padStart(2, "0");
-        const endDate = `${pad2(endDateObj.getUTCDate())}/${pad2(endDateObj.getUTCMonth() + 1)}/${endDateObj.getUTCFullYear()}`;
+        const endDate = `${endDateObj.getUTCFullYear()}-${pad2(endDateObj.getUTCMonth() + 1)}-${pad2(endDateObj.getUTCDate())}`;
 
         // Si period=13 o 23 (Aguinaldo/Bono14), tipoPago inicia en 1 (2 iteraciones: 1 y 0)
         // Si no, tipoPago inicia en 0 (1 iteración)
