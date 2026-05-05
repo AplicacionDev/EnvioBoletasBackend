@@ -1,2 +1,3 @@
 allowBuilds:
+  msnodesqlv8: true
   puppeteer: true

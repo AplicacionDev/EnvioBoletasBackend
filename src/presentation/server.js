@@ -98,6 +98,34 @@ function createApp() {
     res.status(diagnostics.database.ok ? 200 : 503).json(diagnostics);
   });
 
+  // Diagnóstico de SP previo al envío (sin ejecutar todo el flujo de boletas)
+  const runPreEnvioSpDiagnostic = async (req, res, next) => {
+    try {
+      if (!envs.PRE_ENVIO_SP) {
+        return res.status(400).json({
+          ok: false,
+          message: "PRE_ENVIO_SP no está configurado",
+        });
+      }
+
+      const startedAt = new Date();
+      await boletaQueryRepository.ejecutarPreparacionPendientes();
+
+      return res.json({
+        ok: true,
+        message: "PRE_ENVIO_SP ejecutado correctamente",
+        sp: envs.PRE_ENVIO_SP,
+        startedAt: startedAt.toISOString(),
+        finishedAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  app.get("/api/health/pre-envio-sp", runPreEnvioSpDiagnostic);
+  app.post("/api/health/pre-envio-sp", runPreEnvioSpDiagnostic);
+
   // Error handler
   app.use(errorHandler);
 

@@ -52,6 +52,11 @@ DB_PORT=1433
 DB_DATABASE=nombre_base_datos
 DB_USER=usuario
 DB_PASSWORD=contraseña
+# Driver SQL: auto | tedious | msnodesqlv8
+# auto: Windows => msnodesqlv8, Linux => tedious
+DB_DRIVER=auto
+# Solo aplica cuando DB_DRIVER=msnodesqlv8
+DB_ODBC_DRIVER=ODBC Driver 18 for SQL Server
 DB_ENCRYPT=false
 DB_TRUST_SERVER_CERTIFICATE=true
 DB_APP_NAME=EnvioBoletas
@@ -81,6 +86,8 @@ GRAPH_SEND_AS=
 
 Notas:
 - `MAIL_PROVIDER` acepta `smtp` o `graph`.
+- `DB_DRIVER` permite escoger el cliente SQL por ambiente. Recomendado: `auto`.
+- Si en Windows necesitas pasar triggers de login que validan cliente, usa `DB_DRIVER=msnodesqlv8`.
 - `DB_APP_NAME` define el Application Name reportado a SQL Server (útil para pruebas con triggers de login).
 - `PRE_ENVIO_SP` es opcional; si se define, la API ejecuta ese procedimiento almacenado antes de consultar boletas pendientes.
 - Con 1000 correos por corrida, iniciar con `MAIL_THROTTLE_MS=3000` y lotes de 100 reduce picos de salida.
@@ -121,6 +128,7 @@ pnpm start
 |--------|------|-------------|
 | `GET` | `/api/health` | Estado del servicio |
 | `GET` | `/api/health/db-diagnostics` | Diagnóstico detallado de conectividad a SQL Server |
+| `POST` | `/api/health/pre-envio-sp` | Ejecuta solo `PRE_ENVIO_SP` para validar esquema/base del SP |
 
 ## Scheduler
 

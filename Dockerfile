@@ -55,6 +55,7 @@ COPY --from=build /root/.cache/puppeteer /home/appuser/.cache/puppeteer
 # Copy application code
 COPY package.json ./
 COPY src ./src
+COPY scripts ./scripts
 COPY config ./config
 COPY templates ./templates
 COPY public ./public

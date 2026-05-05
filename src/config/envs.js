@@ -5,6 +5,12 @@ function toBool(value, fallback) {
   return String(value).toLowerCase() === "true";
 }
 
+function normalizeDbDriver(value) {
+  const allowed = ["auto", "tedious", "msnodesqlv8"];
+  const normalized = String(value || "auto").toLowerCase();
+  return allowed.includes(normalized) ? normalized : "auto";
+}
+
 const envs = {
   PORT: process.env.PORT || 3000,
   NODE_ENV: process.env.NODE_ENV || "development",
@@ -15,6 +21,8 @@ const envs = {
   DB_USER: process.env.DB_USER,
   DB_PASSWORD: process.env.DB_PASSWORD,
   DB_PORT: Number(process.env.DB_PORT) || 1433,
+  DB_DRIVER: normalizeDbDriver(process.env.DB_DRIVER),
+  DB_ODBC_DRIVER: process.env.DB_ODBC_DRIVER || "ODBC Driver 18 for SQL Server",
   DB_ENCRYPT: toBool(process.env.DB_ENCRYPT, false),
   DB_TRUST_SERVER_CERTIFICATE: toBool(process.env.DB_TRUST_SERVER_CERTIFICATE, true),
   DB_APP_NAME: process.env.DB_APP_NAME || "EnvioBoletas",
